@@ -11,16 +11,24 @@ import org.lia.accessibility.device.HapticFeedback
 import org.lia.accessibility.device.HapticSignal
 import org.lia.accessibility.safety.HardwareShortcut
 import org.lia.accessibility.safety.HardwareShortcutDetector
+import org.lia.accessibility.security.ActionRisk
+import org.lia.accessibility.voice.VoiceVerification
 
 class LiaAccessibilityService : AccessibilityService() {
     private val shortcuts = HardwareShortcutDetector()
     private lateinit var haptics: HapticFeedback
+    private lateinit var androidController: AuthorizedAndroidController
     private var deviceEvents: DeviceEventMonitor? = null
+
+    @Volatile
+    private var lastUiEventAtEpochMs: Long = 0L
 
     override fun onServiceConnected() {
         super.onServiceConnected()
 
         haptics = HapticFeedback(this)
+        androidController = AuthorizedAndroidController(this)
+
         deviceEvents = DeviceEventMonitor(
             context = this,
             onBatteryLow = { percent ->
@@ -41,7 +49,9 @@ class LiaAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        // Próxima capa: convertir AccessibilityNodeInfo en un estado semántico verificable.
+        if (event != null) {
+            lastUiEventAtEpochMs = System.currentTimeMillis()
+        }
     }
 
     override fun onInterrupt() = Unit
@@ -72,6 +82,29 @@ class LiaAccessibilityService : AccessibilityService() {
         // Observar sin consumir mantiene el comportamiento normal de volumen/media.
         return false
     }
+
+    internal fun observeScreen(voice: VoiceVerification): ScreenObservationResult =
+        androidController.observe(voice)
+
+    internal fun performAuthorizedAction(
+        voice: VoiceVerification,
+        action: AndroidUiAction,
+        risk: ActionRisk = ActionRisk.ROUTINE,
+        secondFactorSatisfied: Boolean = false,
+        explicitConfirmation: Boolean = false
+    ): UiExecutionResult =
+        androidController.execute(
+            voice = voice,
+            action = action,
+            risk = risk,
+            secondFactorSatisfied = secondFactorSatisfied,
+            explicitConfirmation = explicitConfirmation
+        )
+
+    internal fun screenChangedSince(result: UiExecutionResult): Boolean =
+        androidController.verifyStateChanged(result)
+
+    internal fun lastUiEventAt(): Long = lastUiEventAtEpochMs
 
     internal fun goBack(): Boolean = performGlobalAction(GLOBAL_ACTION_BACK)
     internal fun goHome(): Boolean = performGlobalAction(GLOBAL_ACTION_HOME)
