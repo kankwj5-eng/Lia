@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Lía</string>
+    <string name="accessibility_service_name">Lía — Asistente de accesibilidad</string>
+    <string name="accessibility_service_description">Permite que Lía comprenda la pantalla y realice acciones autorizadas por la persona usuaria.</string>
+</resources>
