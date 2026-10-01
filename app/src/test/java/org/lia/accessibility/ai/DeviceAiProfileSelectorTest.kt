@@ -13,7 +13,7 @@ class DeviceAiProfileSelectorTest {
         )
 
         assertEquals(LocalModelClass.TINY, profile.recommendedModelClass)
-        assertEquals(1_228, profile.plannerMemoryBudgetMb)
+        assertEquals(1_228L, profile.plannerMemoryBudgetMb)
     }
 
     @Test
@@ -47,6 +47,6 @@ class DeviceAiProfileSelectorTest {
         )
 
         assertEquals(LocalModelClass.MEDIUM, profile.recommendedModelClass)
-        assertEquals(3_072, profile.plannerMemoryBudgetMb)
+        assertEquals(3_072L, profile.plannerMemoryBudgetMb)
     }
 }
