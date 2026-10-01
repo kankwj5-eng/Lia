@@ -204,6 +204,9 @@ class LiaAccessibilityService : AccessibilityService() {
         if (::screenOcrReader.isInitialized) {
             screenOcrReader.close()
         }
+        if (::systemController.isInitialized) {
+            systemController.close()
+        }
         super.onDestroy()
     }
 
