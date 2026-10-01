@@ -50,6 +50,12 @@ object LiaAccessibilityBridge {
         return AccessibilityBridgeResult.Started
     }
 
+    fun setBubbleEnabled(enabled: Boolean): Boolean {
+        val service = serviceReference?.get() ?: return false
+        service.setFloatingBubbleEnabled(enabled)
+        return true
+    }
+
     fun cancel(): Boolean {
         val service = serviceReference?.get() ?: return false
         service.cancelLocalAgentGoal()
