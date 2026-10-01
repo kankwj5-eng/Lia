@@ -65,7 +65,8 @@ data class AgentConfig(
     val maxSteps: Int = 30,
     val maxRecoveries: Int = 5,
     val maxRepeatedAction: Int = 3,
-    val maxRepeatedObservation: Int = 4
+    val maxRepeatedObservation: Int = 4,
+    val preActionFreshnessGuard: Boolean = true
 ) {
     init {
         require(maxSteps in 1..200)
@@ -108,6 +109,16 @@ interface AgentEnvironment<A> {
         action: A,
         outcome: ToolOutcome
     ): VerificationOutcome
+
+    fun verifyCompletion(
+        observation: AgentObservation,
+        proposedResult: String
+    ): VerificationOutcome =
+        VerificationOutcome(
+            progress = true,
+            completed = true,
+            message = proposedResult
+        )
 }
 
 class LiaMicroAgent<A>(
@@ -229,9 +240,79 @@ class LiaMicroAgent<A>(
 
             when (decision) {
                 is AgentDecision.Finish -> {
-                    phase = AgentPhase.COMPLETED
-                    emit(AgentEventType.COMPLETION, step, decision.result)
-                    return AgentRunResult(true, decision.result, step, recoveries, events.toList())
+                    phase = AgentPhase.VERIFYING
+                    emit(
+                        AgentEventType.PHASE,
+                        step,
+                        "Verificando que el objetivo realmente esté completo."
+                    )
+
+                    val finalObservation = runCatching {
+                        environment.observe()
+                    }.getOrElse { before }
+
+                    val completion = runCatching {
+                        environment.verifyCompletion(
+                            observation = finalObservation,
+                            proposedResult = decision.result
+                        )
+                    }.getOrElse { error ->
+                        VerificationOutcome(
+                            progress = false,
+                            completed = false,
+                            message = error.message ?: "No se pudo verificar la finalización."
+                        )
+                    }
+
+                    emit(
+                        AgentEventType.VERIFICATION,
+                        step,
+                        completion.message,
+                        fingerprint = finalObservation.fingerprint
+                    )
+
+                    if (completion.completed) {
+                        phase = AgentPhase.COMPLETED
+                        emit(
+                            AgentEventType.COMPLETION,
+                            step,
+                            completion.message,
+                            fingerprint = finalObservation.fingerprint
+                        )
+                        return AgentRunResult(
+                            true,
+                            completion.message,
+                            step,
+                            recoveries,
+                            events.toList()
+                        )
+                    }
+
+                    recoveries++
+                    phase = AgentPhase.RECOVERING
+                    emit(
+                        AgentEventType.RECOVERY,
+                        step,
+                        "El planificador declaró éxito, pero el entorno no lo confirmó."
+                    )
+
+                    if (recoveries > config.maxRecoveries) {
+                        phase = AgentPhase.FAILED
+                        emit(
+                            AgentEventType.FAILURE,
+                            step,
+                            "No fue posible verificar la finalización de la tarea."
+                        )
+                        return AgentRunResult(
+                            false,
+                            "Lía no pudo confirmar que la tarea terminó correctamente.",
+                            step,
+                            recoveries,
+                            events.toList()
+                        )
+                    }
+
+                    continue
                 }
 
                 is AgentDecision.Fail -> {
@@ -284,6 +365,42 @@ class LiaMicroAgent<A>(
                         }
 
                         continue
+                    }
+
+                    if (config.preActionFreshnessGuard) {
+                        val freshObservation = runCatching {
+                            environment.observe()
+                        }.getOrElse { before }
+
+                        if (freshObservation.fingerprint != before.fingerprint) {
+                            recoveries++
+                            phase = AgentPhase.RECOVERING
+                            emit(
+                                AgentEventType.RECOVERY,
+                                step,
+                                "La pantalla cambió después de planificar; se canceló la acción obsoleta.",
+                                fingerprint = freshObservation.fingerprint,
+                                actionKey = decision.actionKey
+                            )
+
+                            if (recoveries > config.maxRecoveries) {
+                                phase = AgentPhase.FAILED
+                                emit(
+                                    AgentEventType.FAILURE,
+                                    step,
+                                    "Se agotó el presupuesto de recuperación por cambios de pantalla."
+                                )
+                                return AgentRunResult(
+                                    false,
+                                    "La interfaz cambió demasiadas veces antes de actuar.",
+                                    step,
+                                    recoveries,
+                                    events.toList()
+                                )
+                            }
+
+                            continue
+                        }
                     }
 
                     phase = AgentPhase.EXECUTING
