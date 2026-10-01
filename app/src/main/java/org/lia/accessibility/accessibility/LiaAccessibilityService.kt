@@ -39,6 +39,7 @@ class LiaAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        LiaAccessibilityBridge.attach(this)
 
         haptics = HapticFeedback(this)
         androidController = AuthorizedAndroidController(this)
@@ -293,6 +294,7 @@ class LiaAccessibilityService : AccessibilityService() {
     }
 
     override fun onDestroy() {
+        LiaAccessibilityBridge.detach(this)
         deviceEvents?.stop()
         deviceEvents = null
         if (::agentCoordinator.isInitialized) {
