@@ -32,6 +32,10 @@
             </intent-filter>
         </activity>
 
+        <receiver
+            android:name=".location.GeofenceTransitionReceiver"
+            android:exported="false" />
+
         <service
             android:name=".accessibility.LiaAccessibilityService"
             android:exported="false"
