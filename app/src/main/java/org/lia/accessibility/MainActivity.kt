@@ -309,7 +309,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (!plannerModelStore.isInstalled()) {
-            commandStatus("Primero importa el cerebro local .litertlm.")
+            commandStatus("Primero importa tu modelo local GGUF o LiteRT-LM.")
             return
         }
 
@@ -426,7 +426,7 @@ class MainActivity : AppCompatActivity() {
 
         worker.execute {
             val result = runCatching {
-                val sourceName = displayName(uri) ?: "planner.litertlm"
+                val sourceName = displayName(uri) ?: "modelo-local"
                 contentResolver.openInputStream(uri).use { input ->
                     requireNotNull(input) {
                         "Android no permitió abrir el archivo seleccionado."
@@ -442,9 +442,11 @@ class MainActivity : AppCompatActivity() {
                 result.onSuccess { info ->
                     val megabytes = info.sizeBytes / (1024L * 1024L)
                     plannerStatus(
-                        "Modelo local instalado: " +
+                        "Modelo local conectado: " +
+                            info.format.displayName +
+                            " · " +
                             megabytes +
-                            " MB. SHA-256: " +
+                            " MB · SHA-256 " +
                             info.sha256.take(12) +
                             "…"
                     )
@@ -488,7 +490,7 @@ class MainActivity : AppCompatActivity() {
 
         if (model == null) {
             plannerStatus(
-                "Cerebro local: no instalado. Puedes importar un archivo .litertlm."
+                "Cerebro local: no instalado. Importa el modelo que ya descargaste (.gguf o .litertlm)."
             )
             return
         }
@@ -496,6 +498,8 @@ class MainActivity : AppCompatActivity() {
         val megabytes = model.sizeBytes / (1024L * 1024L)
         plannerStatus(
             "Cerebro local listo: " +
+                model.format.displayName +
+                " · " +
                 megabytes +
                 " MB · " +
                 model.sha256.take(12) +
