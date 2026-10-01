@@ -15,6 +15,7 @@ import org.lia.accessibility.notifications.NotificationStore
 import org.lia.accessibility.security.ActionRisk
 import org.lia.accessibility.security.AuthorizationDecision
 import org.lia.accessibility.security.CommandAuthorizationGate
+import org.lia.accessibility.voice.AndroidTtsFallback
 import org.lia.accessibility.voice.VoiceVerification
 
 sealed interface SystemCommand {
@@ -68,6 +69,10 @@ sealed interface SystemCommand {
         override val risk = ActionRisk.ROUTINE
     }
 
+    data class Speak(val text: String) : SystemCommand {
+        override val risk = ActionRisk.ROUTINE
+    }
+
     data class ReadRecentNotifications(val limit: Int = 10) : SystemCommand {
         override val risk = ActionRisk.ROUTINE
     }
@@ -94,6 +99,7 @@ class AndroidSystemController(
     private val torch = TorchController(context)
     private val media = MediaControlController(context)
     private val audio = context.getSystemService(AudioManager::class.java)
+    private val speech = AndroidTtsFallback(context)
 
     fun execute(
         voice: VoiceVerification,
@@ -225,6 +231,13 @@ class AndroidSystemController(
                 result(clipboard != null, "Texto copiado.")
             }
 
+            is SystemCommand.Speak -> {
+                result(
+                    speech.speak(command.text),
+                    "Lía está hablando."
+                )
+            }
+
             is SystemCommand.ReadRecentNotifications -> {
                 val summaries = NotificationStore.recent(command.limit).map { it.spokenSummary() }
                 SystemCommandResult(
@@ -266,6 +279,10 @@ class AndroidSystemController(
                 }
             }
         }
+    }
+
+    fun close() {
+        speech.close()
     }
 
     private fun start(intent: Intent, successMessage: String): SystemCommandResult {
