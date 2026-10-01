@@ -1,0 +1,9 @@
+appId: org.lia.accessibility
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Lía"
+- assertVisible: "Tus ojos. Tus manos. Tu libertad."
+- assertVisible: "Registrar muestra de voz"
+- assertVisible: "Usar cámara para ver el entorno"
+- assertVisible: "Activar control de Android"
