@@ -13,6 +13,7 @@ import android.provider.Settings
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import org.lia.accessibility.accessibility.AccessibilityBridgeResult
@@ -57,6 +58,7 @@ class MainActivity : AppCompatActivity() {
     private var engine: SherpaSpeakerEngine? = null
     private var commandTranscriber: SherpaWhisperCommandTranscriber? = null
     private var resumeVoiceCommandAfterMicPermission = false
+    private var continueAccessibilitySetupOnResume = false
 
     private val phrases = listOf(
         "Hola Lía, esta es mi voz.",
@@ -156,7 +158,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.accessibilitySettingsButton).setOnClickListener {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            openAccessibilitySetup()
         }
 
         findViewById<Button>(R.id.notificationSettingsButton).setOnClickListener {
@@ -189,6 +191,65 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         if (::assistantStatusText.isInitialized) {
             refreshAssistantStatus()
+        }
+
+        if (continueAccessibilitySetupOnResume) {
+            continueAccessibilitySetupOnResume = false
+            AlertDialog.Builder(this)
+                .setTitle("Ahora activa Lía")
+                .setMessage(
+                    "Si ya tocaste ⋮ y elegiste “Permitir ajustes restringidos”, " +
+                        "abre Accesibilidad y activa “Lía — Asistente de accesibilidad”."
+                )
+                .setPositiveButton("Abrir Accesibilidad") { _, _ ->
+                    openAccessibilitySettings()
+                }
+                .setNegativeButton("Todavía no", null)
+                .show()
+        }
+    }
+
+    private fun openAccessibilitySetup() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            openAccessibilitySettings()
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Android bloqueó temporalmente este permiso")
+            .setMessage(
+                "Como Lía se instaló desde un APK, Android 13 o posterior puede " +
+                    "bloquear el acceso de accesibilidad hasta que tú lo autorices.\n\n" +
+                    "1. Abre la información de Lía.\n" +
+                    "2. Toca ⋮ arriba a la derecha.\n" +
+                    "3. Elige “Permitir ajustes restringidos”.\n" +
+                    "4. Vuelve a Lía y activa su servicio de accesibilidad."
+            )
+            .setPositiveButton("Abrir información de Lía") { _, _ ->
+                continueAccessibilitySetupOnResume = true
+                openAppDetails()
+            }
+            .setNeutralButton("Ya lo permití") { _, _ ->
+                openAccessibilitySettings()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun openAppDetails() {
+        val intent = Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.parse("package:$packageName")
+        )
+        runCatching { startActivity(intent) }
+            .onFailure { startActivity(Intent(Settings.ACTION_SETTINGS)) }
+    }
+
+    private fun openAccessibilitySettings() {
+        runCatching {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }.onFailure {
+            startActivity(Intent(Settings.ACTION_SETTINGS))
         }
     }
 
