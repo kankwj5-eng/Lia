@@ -57,6 +57,39 @@
             android:text="Probar mi voz" />
 
         <TextView
+            android:id="@+id/commandStatusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:accessibilityLiveRegion="polite"
+            android:text="Reconocimiento de órdenes: comprobando…"
+            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+        <Button
+            android:id="@+id/prepareCommandSpeechButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:minHeight="56dp"
+            android:text="Preparar reconocimiento de órdenes (~111 MB)" />
+
+        <Button
+            android:id="@+id/talkToLiaButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:minHeight="56dp"
+            android:text="Hablar con Lía" />
+
+        <Button
+            android:id="@+id/cancelAgentButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:minHeight="56dp"
+            android:text="Cancelar tarea" />
+
+        <TextView
             android:id="@+id/plannerStatusText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
