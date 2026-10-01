@@ -329,26 +329,37 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshAssistantStatus() {
-        val active = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        val assistantActive = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val roleManager = getSystemService(RoleManager::class.java)
             roleManager?.isRoleHeld(RoleManager.ROLE_ASSISTANT) == true
         } else {
             false
         }
+        val controlActive = LiaAccessibilityBridge.isConnected()
 
         assistantStatus(
-            if (active) {
-                "Asistente del sistema: Lía está activa."
-            } else {
-                "Asistente del sistema: todavía no seleccionada."
+            when {
+                controlActive && assistantActive ->
+                    "Control de Android activo · Lía también es tu asistente del sistema."
+                controlActive ->
+                    "Control de Android activo. El rol de asistente del sistema es opcional."
+                else ->
+                    "Falta activar el control de Android para que Lía pueda actuar dentro de otras apps."
             }
         )
 
         assistantRoleButton.text =
-            if (active) {
-                "Lía ya es el asistente del sistema"
+            if (assistantActive) {
+                "Asistente del sistema activo"
             } else {
-                "Usar Lía como asistente del sistema"
+                "Usar Lía como asistente"
+            }
+
+        findViewById<Button>(R.id.accessibilitySettingsButton).text =
+            if (controlActive) {
+                "Control de Android activo"
+            } else {
+                "Activar control de Android"
             }
     }
 
