@@ -10,6 +10,7 @@ import android.provider.Settings
 import androidx.core.content.ContextCompat
 import org.lia.accessibility.media.MediaCommand
 import org.lia.accessibility.media.MediaControlController
+import org.lia.accessibility.notifications.NotificationReplyRegistry
 import org.lia.accessibility.notifications.NotificationStore
 import org.lia.accessibility.security.ActionRisk
 import org.lia.accessibility.security.AuthorizationDecision
@@ -69,6 +70,13 @@ sealed interface SystemCommand {
 
     data class ReadRecentNotifications(val limit: Int = 10) : SystemCommand {
         override val risk = ActionRisk.ROUTINE
+    }
+
+    data class ReplyToNotification(
+        val notificationKey: String,
+        val message: String
+    ) : SystemCommand {
+        override val risk = ActionRisk.SENSITIVE
     }
 }
 
@@ -229,6 +237,33 @@ class AndroidSystemController(
                     },
                     data = summaries
                 )
+            }
+
+            is SystemCommand.ReplyToNotification -> {
+                val notification = NotificationStore.find(command.notificationKey)
+                if (notification == null) {
+                    SystemCommandResult(
+                        accepted = true,
+                        performed = false,
+                        message = "La notificación ya no está disponible."
+                    )
+                } else if (!notification.replyAvailable) {
+                    SystemCommandResult(
+                        accepted = true,
+                        performed = false,
+                        message = "Esa notificación no permite respuesta rápida."
+                    )
+                } else {
+                    val ok = NotificationReplyRegistry.reply(
+                        context = context,
+                        notificationKey = command.notificationKey,
+                        message = command.message
+                    )
+                    result(
+                        ok,
+                        "Respuesta enviada desde la notificación."
+                    )
+                }
             }
         }
     }
