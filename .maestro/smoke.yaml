@@ -5,6 +5,11 @@ appId: org.lia.accessibility
 - assertVisible: "Lía"
 - assertVisible: "Tus ojos. Tus manos. Tu libertad."
 - assertVisible: "Registrar muestra de voz"
+- scrollUntilVisible:
+    element:
+      text: "Hablar con Lía"
+    direction: DOWN
+- assertVisible: "Hablar con Lía"
 - assertVisible: "Importar cerebro local (.litertlm)"
 - assertVisible: "Usar cámara para ver el entorno"
 - assertVisible: "Activar control de Android"
