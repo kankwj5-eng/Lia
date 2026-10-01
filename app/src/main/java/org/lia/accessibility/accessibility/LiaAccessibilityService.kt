@@ -12,12 +12,20 @@ import org.lia.accessibility.device.HapticSignal
 import org.lia.accessibility.safety.HardwareShortcut
 import org.lia.accessibility.safety.HardwareShortcutDetector
 import org.lia.accessibility.security.ActionRisk
+import org.lia.accessibility.system.AndroidSystemController
+import org.lia.accessibility.system.SystemCommand
+import org.lia.accessibility.system.SystemCommandResult
+import org.lia.accessibility.vision.AccessibilityScreenshotProvider
+import org.lia.accessibility.vision.ScreenOcrReader
 import org.lia.accessibility.voice.VoiceVerification
 
 class LiaAccessibilityService : AccessibilityService() {
     private val shortcuts = HardwareShortcutDetector()
     private lateinit var haptics: HapticFeedback
     private lateinit var androidController: AuthorizedAndroidController
+    private lateinit var systemController: AndroidSystemController
+    private lateinit var screenshotProvider: AccessibilityScreenshotProvider
+    private lateinit var screenOcrReader: ScreenOcrReader
     private var deviceEvents: DeviceEventMonitor? = null
 
     @Volatile
@@ -28,6 +36,9 @@ class LiaAccessibilityService : AccessibilityService() {
 
         haptics = HapticFeedback(this)
         androidController = AuthorizedAndroidController(this)
+        systemController = AndroidSystemController(this)
+        screenshotProvider = AccessibilityScreenshotProvider(this)
+        screenOcrReader = ScreenOcrReader()
 
         deviceEvents = DeviceEventMonitor(
             context = this,
@@ -86,6 +97,30 @@ class LiaAccessibilityService : AccessibilityService() {
     internal fun observeScreen(voice: VoiceVerification): ScreenObservationResult =
         androidController.observe(voice)
 
+    internal fun readScreenVisually(
+        voice: VoiceVerification,
+        callback: (Result<String>) -> Unit
+    ) {
+        when (val observation = androidController.observe(voice)) {
+            is ScreenObservationResult.Denied -> {
+                callback(Result.failure(SecurityException(observation.reason)))
+                return
+            }
+
+            is ScreenObservationResult.Allowed -> Unit
+        }
+
+        screenshotProvider.capture { screenshot ->
+            screenshot
+                .onSuccess { bitmap ->
+                    screenOcrReader.read(bitmap, callback)
+                }
+                .onFailure { error ->
+                    callback(Result.failure(error))
+                }
+        }
+    }
+
     internal fun performAuthorizedAction(
         voice: VoiceVerification,
         action: AndroidUiAction,
@@ -97,6 +132,19 @@ class LiaAccessibilityService : AccessibilityService() {
             voice = voice,
             action = action,
             risk = risk,
+            secondFactorSatisfied = secondFactorSatisfied,
+            explicitConfirmation = explicitConfirmation
+        )
+
+    internal fun performSystemCommand(
+        voice: VoiceVerification,
+        command: SystemCommand,
+        secondFactorSatisfied: Boolean = false,
+        explicitConfirmation: Boolean = false
+    ): SystemCommandResult =
+        systemController.execute(
+            voice = voice,
+            command = command,
             secondFactorSatisfied = secondFactorSatisfied,
             explicitConfirmation = explicitConfirmation
         )
@@ -153,6 +201,9 @@ class LiaAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         deviceEvents?.stop()
         deviceEvents = null
+        if (::screenOcrReader.isInitialized) {
+            screenOcrReader.close()
+        }
         super.onDestroy()
     }
 
