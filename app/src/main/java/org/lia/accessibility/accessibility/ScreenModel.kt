@@ -1,7 +1,19 @@
 package org.lia.accessibility.accessibility
 
-import android.graphics.Rect
 import java.security.MessageDigest
+
+data class UiBounds(
+    val left: Int,
+    val top: Int,
+    val right: Int,
+    val bottom: Int
+) {
+    val width: Int get() = (right - left).coerceAtLeast(0)
+    val height: Int get() = (bottom - top).coerceAtLeast(0)
+    val isEmpty: Boolean get() = width == 0 || height == 0
+    val centerX: Float get() = (left + right) / 2f
+    val centerY: Float get() = (top + bottom) / 2f
+}
 
 data class UiNodeSnapshot(
     val path: String,
@@ -10,7 +22,7 @@ data class UiNodeSnapshot(
     val className: String?,
     val viewId: String?,
     val packageName: String?,
-    val bounds: Rect,
+    val bounds: UiBounds,
     val clickable: Boolean,
     val editable: Boolean,
     val scrollable: Boolean,
@@ -44,6 +56,7 @@ data class ScreenSnapshot(
                 append(node.checked).append(';')
             }
         }
+
         val digest = MessageDigest.getInstance("SHA-256").digest(material.encodeToByteArray())
         return digest.joinToString("") { "%02x".format(it) }
     }
