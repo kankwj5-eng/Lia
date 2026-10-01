@@ -40,7 +40,7 @@ object StrictToolProtocol {
     private val topLevelKeys = setOf("tool", "arguments")
 
     fun parse(raw: String): ToolProtocolResult {
-        val text = raw.trim()
+        val text = normalizeModelResponse(raw)
 
         if (text.isEmpty()) {
             return ToolProtocolResult.Rejected("El modelo no devolvió ninguna acción.")
@@ -195,6 +195,23 @@ object StrictToolProtocol {
         }
 
         return ToolProtocolResult.Accepted(call)
+    }
+
+    private fun normalizeModelResponse(raw: String): String {
+        var text = raw.trim()
+
+        // Algunos modelos de razonamiento (por ejemplo ciertas variantes de
+        // Qwen) pueden anteponer un bloque <think> aunque se les pida JSON.
+        // Lía ignora únicamente ese envoltorio conocido y mantiene el resto
+        // del protocolo estrictamente JSON.
+        val thinkingEnd = text.lastIndexOf("</think>")
+        if (thinkingEnd >= 0) {
+            text = text
+                .substring(thinkingEnd + "</think>".length)
+                .trim()
+        }
+
+        return text
     }
 
     private fun convert(value: Any?): ToolValue? =
