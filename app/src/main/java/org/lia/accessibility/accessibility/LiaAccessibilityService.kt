@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Path
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
+import org.lia.accessibility.device.DeviceEventMonitor
 import org.lia.accessibility.device.HapticFeedback
 import org.lia.accessibility.device.HapticSignal
 import org.lia.accessibility.safety.HardwareShortcut
@@ -14,14 +15,33 @@ import org.lia.accessibility.safety.HardwareShortcutDetector
 class LiaAccessibilityService : AccessibilityService() {
     private val shortcuts = HardwareShortcutDetector()
     private lateinit var haptics: HapticFeedback
+    private var deviceEvents: DeviceEventMonitor? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+
         haptics = HapticFeedback(this)
+        deviceEvents = DeviceEventMonitor(
+            context = this,
+            onBatteryLow = { percent ->
+                haptics.signal(HapticSignal.ERROR)
+                emitDeviceWarning(
+                    "Tu batería tiene " + percent + " por ciento. Conecta el teléfono al cargador."
+                )
+            },
+            onInternetChanged = { online ->
+                if (!online) {
+                    emitDeviceWarning(
+                        "Lía detectó que el teléfono se quedó sin conexión a internet. " +
+                            "Las funciones locales siguen disponibles."
+                    )
+                }
+            }
+        ).also { it.start() }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        // Próxima capa: convertir el árbol AccessibilityNodeInfo en un estado semántico.
+        // Próxima capa: convertir AccessibilityNodeInfo en un estado semántico verificable.
     }
 
     override fun onInterrupt() = Unit
@@ -36,6 +56,7 @@ class LiaAccessibilityService : AccessibilityService() {
                         .putExtra(EXTRA_SOURCE, "volume_triple_press")
                 )
             }
+
             HardwareShortcut.ACTIVATE_LIA -> {
                 haptics.signal(HapticSignal.LISTENING)
                 sendBroadcast(
@@ -44,6 +65,7 @@ class LiaAccessibilityService : AccessibilityService() {
                         .putExtra(EXTRA_SOURCE, "bluetooth_or_headset_button")
                 )
             }
+
             null -> Unit
         }
 
@@ -77,6 +99,7 @@ class LiaAccessibilityService : AccessibilityService() {
             moveTo(fromX, fromY)
             lineTo(toX, toY)
         }
+
         return dispatchGesture(
             GestureDescription.Builder()
                 .addStroke(GestureDescription.StrokeDescription(path, 0L, durationMs))
@@ -86,9 +109,25 @@ class LiaAccessibilityService : AccessibilityService() {
         )
     }
 
+    private fun emitDeviceWarning(message: String) {
+        sendBroadcast(
+            Intent(ACTION_DEVICE_WARNING)
+                .setPackage(packageName)
+                .putExtra(EXTRA_MESSAGE, message)
+        )
+    }
+
+    override fun onDestroy() {
+        deviceEvents?.stop()
+        deviceEvents = null
+        super.onDestroy()
+    }
+
     companion object {
         const val ACTION_SOS_TRIGGERED = "org.lia.accessibility.action.SOS_TRIGGERED"
         const val ACTION_ACTIVATE_LIA = "org.lia.accessibility.action.ACTIVATE_LIA"
+        const val ACTION_DEVICE_WARNING = "org.lia.accessibility.action.DEVICE_WARNING"
         const val EXTRA_SOURCE = "source"
+        const val EXTRA_MESSAGE = "message"
     }
 }
