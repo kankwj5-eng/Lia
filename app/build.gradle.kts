@@ -45,6 +45,7 @@ dependencies {
     implementation("com.google.ai.edge.litertlm:litertlm-android:0.13.1")
 
     implementation("com.github.k2-fsa.sherpa-onnx:sherpa-onnx:v1.13.8")
+    implementation("org.apache.commons:commons-compress:1.28.0")
 
     implementation("androidx.camera:camera-core:1.5.3")
     implementation("androidx.camera:camera-camera2:1.5.3")
