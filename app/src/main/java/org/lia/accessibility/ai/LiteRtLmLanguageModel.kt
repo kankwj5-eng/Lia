@@ -7,7 +7,6 @@ import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.SamplerConfig
-import java.io.Closeable
 import java.io.File
 import java.util.concurrent.Executors
 import kotlin.coroutines.resume
@@ -59,7 +58,7 @@ class LiteRtLmLanguageModel(
         LiteRtPlannerRuntimeSelector.forDevice(
             DeviceAiProfileProvider(context.applicationContext).capture()
         )
-) : LocalLanguageModel, Closeable {
+) : ManagedLocalLanguageModel {
     private val appContext = context.applicationContext
     private val worker = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "lia-litert-planner").apply {
