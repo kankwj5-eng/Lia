@@ -31,8 +31,19 @@ jobs:
       - name: Unit tests
         run: gradle :app:testDebugUnitTest --stacktrace
 
-      - name: Build debug APK
-        run: gradle :app:assembleDebug --stacktrace
+      - name: Android Lint
+        run: gradle :app:lintDebug --stacktrace
+
+      - name: Build debug and test APKs
+        run: gradle :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
+
+      - name: Upload lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lia-lint-reports
+          path: app/build/reports/lint-results-debug.*
+          if-no-files-found: ignore
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
