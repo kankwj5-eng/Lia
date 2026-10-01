@@ -9,6 +9,7 @@ enum class ScrollDirection {
 }
 
 sealed interface AndroidUiAction {
+    data class OpenApp(val appName: String) : AndroidUiAction
     data class Click(val selector: UiSelector) : AndroidUiAction
     data class SetText(val selector: UiSelector, val text: String) : AndroidUiAction
     data class Scroll(
@@ -32,7 +33,32 @@ class AccessibilityActionExecutor(
     private val service: LiaAccessibilityService,
     private val treeReader: AccessibilityTreeReader
 ) {
+    private val apps = InstalledAppResolver(service)
+
     fun execute(action: AndroidUiAction): UiExecutionResult {
+        if (action is AndroidUiAction.OpenApp) {
+            val before = service.rootInActiveWindow?.let { treeReader.capture(it).fingerprint() }
+            val resolved = apps.resolve(action.appName)
+                ?: return UiExecutionResult(
+                    accepted = true,
+                    performed = false,
+                    message = "No encontré una aplicación llamada " + action.appName + ".",
+                    beforeFingerprint = before
+                )
+
+            val performed = apps.launch(resolved.label)
+            return UiExecutionResult(
+                accepted = true,
+                performed = performed,
+                message = if (performed) {
+                    "Abriendo " + resolved.label + "."
+                } else {
+                    "Android no permitió abrir " + resolved.label + "."
+                },
+                beforeFingerprint = before
+            )
+        }
+
         val root = service.rootInActiveWindow
             ?: return UiExecutionResult(false, false, "No hay una ventana activa accesible.")
 
@@ -107,6 +133,9 @@ class AccessibilityActionExecutor(
 
             AndroidUiAction.Recents ->
                 global(service.openRecents(), "Recientes abierto.", before)
+
+            is AndroidUiAction.OpenApp ->
+                error("OpenApp se maneja antes de obtener la ventana activa.")
         }
     }
 
