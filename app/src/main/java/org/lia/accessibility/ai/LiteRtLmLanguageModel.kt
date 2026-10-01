@@ -93,8 +93,7 @@ class LiteRtLmLanguageModel(
                                 temperature = 0.0
                             ),
                             automaticToolCalling = false,
-                            channels = emptyList(),
-                            maxOutputToken = runtimeConfig.maxOutputTokens
+                            channels = emptyList()
                         )
                     ).use { conversation ->
                         conversation.sendMessage(turn.userText)
@@ -123,7 +122,7 @@ class LiteRtLmLanguageModel(
             val created = Engine(
                 EngineConfig(
                     modelPath = modelFile.absolutePath,
-                    backend = Backend.CPU(threadCount = runtimeConfig.cpuThreads),
+                    backend = Backend.CPU(numOfThreads = runtimeConfig.cpuThreads),
                     visionBackend = null,
                     audioBackend = null,
                     maxNumTokens = runtimeConfig.maxNumTokens,
