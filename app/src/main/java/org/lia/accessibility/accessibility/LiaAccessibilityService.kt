@@ -3,9 +3,21 @@ package org.lia.accessibility.accessibility
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.content.Intent
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.graphics.Path
+import android.graphics.PixelFormat
+import android.graphics.drawable.GradientDrawable
+import android.view.Gravity
 import android.view.KeyEvent
+import android.view.MotionEvent
+import android.view.View
+import android.view.WindowManager
+import android.widget.ImageButton
 import android.view.accessibility.AccessibilityEvent
+import org.lia.accessibility.LiaPreferences
+import org.lia.accessibility.MainActivity
+import org.lia.accessibility.R
 import org.lia.accessibility.agent.LiaAgentCoordinator
 import org.lia.accessibility.agent.LocalAgentOutcome
 import org.lia.accessibility.agent.PhoneState
@@ -33,6 +45,9 @@ class LiaAccessibilityService : AccessibilityService() {
     private lateinit var phoneStateProvider: PhoneStateProvider
     private lateinit var agentCoordinator: LiaAgentCoordinator
     private var deviceEvents: DeviceEventMonitor? = null
+    private var bubbleView: View? = null
+    private var bubbleWindowManager: WindowManager? = null
+    private var bubbleLayoutParams: WindowManager.LayoutParams? = null
 
     @Volatile
     private var lastUiEventAtEpochMs: Long = 0L
@@ -48,6 +63,7 @@ class LiaAccessibilityService : AccessibilityService() {
         screenOcrReader = ScreenOcrReader()
         phoneStateProvider = PhoneStateProvider(this)
         agentCoordinator = LiaAgentCoordinator(this)
+        setFloatingBubbleEnabled(LiaPreferences(this).bubbleEnabled)
 
         deviceEvents = DeviceEventMonitor(
             context = this,
@@ -231,6 +247,130 @@ class LiaAccessibilityService : AccessibilityService() {
         }
     }
 
+    internal fun setFloatingBubbleEnabled(enabled: Boolean) {
+        if (enabled) {
+            showFloatingBubble()
+        } else {
+            hideFloatingBubble()
+        }
+    }
+
+    private fun showFloatingBubble() {
+        if (bubbleView != null) return
+
+        val windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        val size = dp(60)
+        val margin = dp(14)
+
+        val button = ImageButton(this).apply {
+            contentDescription = "Hablar con Lía"
+            setImageResource(R.drawable.ic_lia_spark)
+            imageTintList = ColorStateList.valueOf(Color.WHITE)
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+            elevation = dp(10).toFloat()
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.rgb(168, 133, 255))
+                setStroke(dp(1), Color.argb(90, 255, 255, 255))
+            }
+        }
+
+        val params = WindowManager.LayoutParams(
+            size,
+            size,
+            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            x = resources.displayMetrics.widthPixels - size - margin
+            y = resources.displayMetrics.heightPixels / 3
+        }
+
+        var startX = 0
+        var startY = 0
+        var downX = 0f
+        var downY = 0f
+        var dragged = false
+        val dragThreshold = dp(8)
+
+        button.setOnClickListener {
+            launchVoiceFromBubble()
+        }
+
+        button.setOnTouchListener { view, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    startX = params.x
+                    startY = params.y
+                    downX = event.rawX
+                    downY = event.rawY
+                    dragged = false
+                    true
+                }
+
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = (event.rawX - downX).toInt()
+                    val dy = (event.rawY - downY).toInt()
+                    if (kotlin.math.abs(dx) > dragThreshold ||
+                        kotlin.math.abs(dy) > dragThreshold
+                    ) {
+                        dragged = true
+                    }
+                    params.x = (startX + dx).coerceAtLeast(0)
+                    params.y = (startY + dy).coerceAtLeast(0)
+                    runCatching {
+                        windowManager.updateViewLayout(view, params)
+                    }
+                    true
+                }
+
+                MotionEvent.ACTION_UP -> {
+                    if (!dragged) {
+                        view.performClick()
+                    }
+                    true
+                }
+
+                else -> false
+            }
+        }
+
+        runCatching {
+            windowManager.addView(button, params)
+        }.onSuccess {
+            bubbleWindowManager = windowManager
+            bubbleLayoutParams = params
+            bubbleView = button
+        }
+    }
+
+    private fun hideFloatingBubble() {
+        val view = bubbleView ?: return
+        runCatching {
+            bubbleWindowManager?.removeView(view)
+        }
+        bubbleView = null
+        bubbleLayoutParams = null
+        bubbleWindowManager = null
+    }
+
+    private fun launchVoiceFromBubble() {
+        startActivity(
+            Intent(this, MainActivity::class.java)
+                .addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                )
+                .putExtra(MainActivity.EXTRA_START_VOICE_COMMAND, true)
+        )
+    }
+
+    private fun dp(value: Int): Int =
+        (value * resources.displayMetrics.density).toInt()
+
     internal fun goBack(): Boolean = performGlobalAction(GLOBAL_ACTION_BACK)
     internal fun goHome(): Boolean = performGlobalAction(GLOBAL_ACTION_HOME)
     internal fun openRecents(): Boolean = performGlobalAction(GLOBAL_ACTION_RECENTS)
@@ -294,6 +434,7 @@ class LiaAccessibilityService : AccessibilityService() {
     }
 
     override fun onDestroy() {
+        hideFloatingBubble()
         LiaAccessibilityBridge.detach(this)
         deviceEvents?.stop()
         deviceEvents = null

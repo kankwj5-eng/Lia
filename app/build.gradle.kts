@@ -43,6 +43,7 @@ dependencies {
     implementation("androidx.activity:activity-ktx:1.11.0")
     implementation("com.google.android.material:material:1.13.0")
     implementation("com.google.ai.edge.litertlm:litertlm-android:0.13.1")
+    implementation("dev.ffmpegkit-maintained:llama-android:0.1.1")
 
     implementation("com.github.k2-fsa.sherpa-onnx:sherpa-onnx:v1.13.8")
     implementation("org.apache.commons:commons-compress:1.28.0")

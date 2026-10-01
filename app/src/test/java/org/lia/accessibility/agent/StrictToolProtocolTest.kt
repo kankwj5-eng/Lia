@@ -61,6 +61,19 @@ class StrictToolProtocolTest {
     }
 
     @Test
+    fun stripsQwenThinkingWrapperBeforeProtocolParsing() {
+        val normalized = StrictToolProtocol.normalizeModelResponse(
+            "<think>razonamiento interno</think>\n" +
+                "{\"tool\":\"home\",\"arguments\":{}}"
+        )
+
+        assertEquals(
+            "{\"tool\":\"home\",\"arguments\":{}}",
+            normalized
+        )
+    }
+
+    @Test
     fun actionKeyIsDeterministic() {
         val a = StrictToolProtocol.validate(
             "compose_sms",

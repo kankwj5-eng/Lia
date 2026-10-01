@@ -1,158 +1,506 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:background="@drawable/bg_lia_home"
+    android:fillViewport="true"
+    android:clipToPadding="false">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:paddingStart="20dp"
+        android:paddingTop="24dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="40dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Lía"
-            android:textAppearance="@style/TextAppearance.Material3.HeadlineLarge" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Tus ojos. Tus manos. Tu libertad."
-            android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                app:cardBackgroundColor="@color/lia_primary_strong"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp">
 
-        <TextView
-            android:id="@+id/statusText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:accessibilityLiveRegion="polite"
-            android:text="Configuración inicial de Lía"
-            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="Lía"
+                    android:src="@drawable/ic_lia_spark"
+                    app:tint="@color/lia_text" />
+            </com.google.android.material.card.MaterialCardView>
 
-        <Button
-            android:id="@+id/recordSampleButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:minHeight="56dp"
-            android:text="Registrar muestra de voz" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-        <Button
-            android:id="@+id/saveVoiceButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:minHeight="56dp"
-            android:text="Guardar identidad de voz" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Lía"
+                    android:textColor="@color/lia_text"
+                    android:textSize="32sp"
+                    android:textStyle="bold" />
 
-        <Button
-            android:id="@+id/testVoiceButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:minHeight="56dp"
-            android:text="Probar mi voz" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Tu agente personal en Android"
+                    android:textColor="@color/lia_text_secondary"
+                    android:textSize="15sp" />
+            </LinearLayout>
+        </LinearLayout>
 
-        <TextView
-            android:id="@+id/assistantStatusText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:accessibilityLiveRegion="polite"
-            android:text="Asistente del sistema: comprobando…"
-            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-        <Button
-            android:id="@+id/assistantRoleButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:minHeight="56dp"
-            android:text="Usar Lía como asistente del sistema" />
-
-        <TextView
-            android:id="@+id/commandStatusText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:accessibilityLiveRegion="polite"
-            android:text="Reconocimiento de órdenes: comprobando…"
-            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-        <Button
-            android:id="@+id/prepareCommandSpeechButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:minHeight="56dp"
-            android:text="Preparar reconocimiento de órdenes (~111 MB)" />
-
-        <Button
-            android:id="@+id/talkToLiaButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:minHeight="56dp"
-            android:text="Hablar con Lía" />
-
-        <Button
-            android:id="@+id/cancelAgentButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:minHeight="56dp"
-            android:text="Cancelar tarea" />
-
-        <TextView
-            android:id="@+id/plannerStatusText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:accessibilityLiveRegion="polite"
-            android:text="Cerebro local: comprobando…"
-            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-
-        <Button
-            android:id="@+id/importPlannerButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:minHeight="56dp"
-            android:text="Importar cerebro local (.litertlm)" />
-
-        <Button
-            android:id="@+id/worldVisionButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:minHeight="56dp"
-            android:text="Usar cámara para ver el entorno" />
-
-        <Button
-            android:id="@+id/accessibilitySettingsButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:minHeight="56dp"
-            android:text="Activar control de Android" />
-
-        <Button
-            android:id="@+id/notificationSettingsButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:minHeight="56dp"
-            android:text="Permitir lectura de notificaciones" />
-
-        <TextView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:paddingBottom="32dp"
-            android:text="La identidad de voz se procesa localmente. Lía guarda embeddings cifrados, no las grabaciones."
-            android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+            app:cardBackgroundColor="@color/lia_surface_high"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/lia_outline"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Hola, estoy lista para ayudarte"
+                    android:textColor="@color/lia_text"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Pídeme algo con naturalidad. Puedo entender la pantalla, usar herramientas y hablar contigo."
+                    android:textColor="@color/lia_text_secondary"
+                    android:textSize="15sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/talkToLiaButton"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="58dp"
+                    android:layout_marginTop="18dp"
+                    android:text="Hablar con Lía"
+                    android:textAllCaps="false"
+                    android:textSize="17sp"
+                    app:cornerRadius="18dp"
+                    app:icon="@drawable/ic_lia_mic"
+                    app:iconGravity="textStart"
+                    app:iconPadding="10dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/cancelAgentButton"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="4dp"
+                    android:text="Cancelar tarea"
+                    android:textAllCaps="false" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="Cerebro local"
+            android:textColor="@color/lia_text"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            app:cardBackgroundColor="@color/lia_surface"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/lia_outline"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:contentDescription="Cerebro local"
+                        android:src="@drawable/ic_lia_brain"
+                        app:tint="@color/lia_primary" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="IA en tu teléfono"
+                        android:textColor="@color/lia_text"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/plannerStatusText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:accessibilityLiveRegion="polite"
+                    android:text="Comprobando modelo local…"
+                    android:textColor="@color/lia_text_secondary"
+                    android:textSize="15sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/importPlannerButton"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:layout_marginTop="14dp"
+                    android:text="Importar o cambiar modelo"
+                    android:textAllCaps="false"
+                    app:cornerRadius="16dp"
+                    app:icon="@drawable/ic_lia_brain"
+                    app:iconGravity="textStart" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="Control del teléfono"
+            android:textColor="@color/lia_text"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            app:cardBackgroundColor="@color/lia_surface"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/lia_outline"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:contentDescription="Accesibilidad"
+                        android:src="@drawable/ic_lia_accessibility"
+                        app:tint="@color/lia_primary" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="Permisos y acceso"
+                        android:textColor="@color/lia_text"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/assistantStatusText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:accessibilityLiveRegion="polite"
+                    android:text="Comprobando asistente…"
+                    android:textColor="@color/lia_text_secondary"
+                    android:textSize="15sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/accessibilitySettingsButton"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:layout_marginTop="14dp"
+                    android:text="Activar control de Android"
+                    android:textAllCaps="false"
+                    app:cornerRadius="16dp"
+                    app:icon="@drawable/ic_lia_accessibility"
+                    app:iconGravity="textStart" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/assistantRoleButton"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:layout_marginTop="10dp"
+                    android:text="Usar Lía como asistente"
+                    android:textAllCaps="false"
+                    app:cornerRadius="16dp"
+                    app:icon="@drawable/ic_lia_spark"
+                    app:iconGravity="textStart" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/bubbleSwitch"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="8dp"
+                    android:text="Burbuja flotante"
+                    android:textColor="@color/lia_text"
+                    android:textSize="16sp"
+                    app:useMaterialThemeColors="true" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="La burbuja aparece cuando el servicio de Lía está activo y abre la escucha con un toque."
+                    android:textColor="@color/lia_text_secondary"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="Voz"
+            android:textColor="@color/lia_text"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            app:cardBackgroundColor="@color/lia_surface"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/lia_outline"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:contentDescription="Protección por voz"
+                        android:src="@drawable/ic_lia_shield"
+                        app:tint="@color/lia_primary" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:text="Protección por voz"
+                        android:textColor="@color/lia_text"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Opcional. Lía funciona sin registrar tu identidad. Actívala solo si quieres que compruebe quién habla."
+                    android:textColor="@color/lia_text_secondary"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/voiceProtectionSwitch"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="4dp"
+                    android:text="Comprobar mi voz antes de actuar"
+                    android:textColor="@color/lia_text"
+                    android:textSize="16sp"
+                    app:useMaterialThemeColors="true" />
+
+                <LinearLayout
+                    android:id="@+id/voiceControlsGroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/statusText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:accessibilityLiveRegion="polite"
+                        android:text="Con dos frases basta para crear tu perfil."
+                        android:textColor="@color/lia_text_secondary"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/recordSampleButton"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="12dp"
+                        android:text="Registrar frase"
+                        android:textAllCaps="false"
+                        app:cornerRadius="16dp"
+                        app:icon="@drawable/ic_lia_mic"
+                        app:iconGravity="textStart" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/saveVoiceButton"
+                        style="@style/Widget.Material3.Button"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="8dp"
+                        android:text="Guardar mi voz"
+                        android:textAllCaps="false"
+                        app:cornerRadius="16dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/testVoiceButton"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="4dp"
+                        android:text="Probar reconocimiento"
+                        android:textAllCaps="false" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="Escucha sin internet"
+            android:textColor="@color/lia_text"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            app:cardBackgroundColor="@color/lia_surface"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/lia_outline"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <TextView
+                    android:id="@+id/commandStatusText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:accessibilityLiveRegion="polite"
+                    android:text="Comprobando reconocimiento de voz…"
+                    android:textColor="@color/lia_text_secondary"
+                    android:textSize="15sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/prepareCommandSpeechButton"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="54dp"
+                    android:layout_marginTop="14dp"
+                    android:text="Preparar escucha offline · ~111 MB"
+                    android:textAllCaps="false"
+                    app:cornerRadius="16dp"
+                    app:icon="@drawable/ic_lia_mic"
+                    app:iconGravity="textStart" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="Herramientas"
+            android:textColor="@color/lia_text"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/worldVisionButton"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="10dp"
+            android:text="Ver el entorno con la cámara"
+            android:textAllCaps="false"
+            app:cornerRadius="18dp"
+            app:icon="@drawable/ic_lia_camera"
+            app:iconGravity="textStart" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/notificationSettingsButton"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="10dp"
+            android:text="Permitir lectura de notificaciones"
+            android:textAllCaps="false"
+            app:cornerRadius="18dp"
+            app:icon="@drawable/ic_lia_notifications"
+            app:iconGravity="textStart" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:gravity="center"
+            android:text="Privado por diseño · cerebro local · sin API obligatoria"
+            android:textColor="@color/lia_text_secondary"
+            android:textSize="13sp" />
     </LinearLayout>
 </ScrollView>

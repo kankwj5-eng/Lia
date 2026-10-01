@@ -2,7 +2,7 @@
 
 Lía mantiene un ciclo de agente, no una colección de macros:
 
-voz -> identidad -> intención -> percepción -> plan -> autorización -> acción -> verificación -> respuesta
+voz/chat/burbuja -> identidad cuando aplique -> intención -> percepción -> cerebro local -> autorización -> acción -> verificación -> respuesta
 
 ## Identidad y voz
 
@@ -47,7 +47,14 @@ Una vibración corta significa escuchando, dos cortas tarea completada, una larg
 
 ## Motor local
 
-Los módulos de voz y lenguaje dependen de interfaces. Candidatos: sherpa-onnx, whisper.cpp, llama.cpp, MNN y LiteRT-LM.
+Los módulos de voz y lenguaje dependen de interfaces. El planificador implementa una sola interfaz `LocalLanguageModel` y puede abrir automáticamente:
+
+- **GGUF** mediante llama.cpp (Qwen y otros modelos compatibles);
+- **LiteRT-LM** mediante LiteRT.
+
+El usuario importa un archivo una sola vez desde el selector de Android. `PlannerModelStore` detecta el formato por cabecera, calcula SHA-256, lo copia al almacenamiento privado de Lía y guarda cuál queda activo. No hay endpoint, API key ni servidor local que configurar.
+
+Las superficies de interacción comparten este mismo cerebro. La voz ya entra al ciclo del agente; el chat escrito, la hoja inferior y la burbuja se conectarán al mismo coordinador en vez de crear runtimes separados.
 
 ## Ejecutor Android
 

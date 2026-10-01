@@ -36,6 +36,15 @@ Lía es un agente de accesibilidad para Android pensado para convertir el teléf
 - botón media/headset como activador compatible con clickers Bluetooth;
 - patrones hápticos para escuchando, completado, error y SOS.
 
+### Cerebro local sin API
+
+- importación desde el selector de archivos de un modelo que ya esté descargado;
+- detección automática de **GGUF** o **LiteRT-LM** por la cabecera real del archivo;
+- GGUF se ejecuta con llama.cpp y LiteRT-LM con LiteRT;
+- Qwen y otros modelos GGUF quedan detrás de la misma interfaz de agente;
+- selección automática del motor: el usuario no configura proveedor, endpoint ni API key;
+- el modelo propone herramientas y la capa determinista de Lía valida antes de ejecutar.
+
 ### Control Android
 
 El AccessibilityService ya está preparado para:
@@ -52,7 +61,7 @@ El AccessibilityService ya está preparado para:
 
 Flujo central:
 
-voz -> identidad -> intención -> percepción -> plan -> autorización -> acción -> verificación -> respuesta
+voz/chat/burbuja -> intención -> percepción -> cerebro local -> autorización -> acción -> verificación -> respuesta
 
 Consulta:
 
@@ -71,7 +80,7 @@ Consulta:
 - identificación de productos sin código conocido;
 - descripción visual general;
 - contactos de emergencia y envío SOS;
-- planificación local con un LLM compacto;
+- chat escrito, hoja inferior y burbuja accesible conectados al mismo cerebro local;
 - anti-replay reforzado para voz.
 
 ## Principios

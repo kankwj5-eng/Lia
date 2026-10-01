@@ -1,5 +1,15 @@
 <resources>
     <style name="Theme.Lia" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:fontFamily">sans</item>
+        <item name="colorPrimary">@color/lia_primary</item>
+        <item name="colorOnPrimary">@color/lia_on_primary</item>
+        <item name="colorSecondary">@color/lia_primary_strong</item>
+        <item name="colorSurface">@color/lia_surface</item>
+        <item name="colorOnSurface">@color/lia_text</item>
+        <item name="colorOutline">@color/lia_outline</item>
+        <item name="android:windowBackground">@color/lia_bg</item>
+        <item name="android:navigationBarColor">@color/lia_bg_deep</item>
+        <item name="android:statusBarColor">@color/lia_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

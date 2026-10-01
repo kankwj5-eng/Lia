@@ -10,11 +10,14 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
 import android.provider.Settings
+import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.google.android.material.switchmaterial.SwitchMaterial
 import org.lia.accessibility.accessibility.AccessibilityBridgeResult
 import org.lia.accessibility.accessibility.LiaAccessibilityBridge
 import org.lia.accessibility.ai.PlannerModelStore
@@ -26,6 +29,7 @@ import org.lia.accessibility.voice.VoiceModelProvisioner
 import org.lia.accessibility.voice.VoiceProfileStore
 import org.lia.accessibility.voice.VerifiedVoiceCommandProcessor
 import org.lia.accessibility.voice.VerifiedVoiceCommandResult
+import org.lia.accessibility.voice.VoiceVerification
 import org.lia.accessibility.voice.VoiceSampleRecorder
 import org.lia.accessibility.voice.WhisperCommandModelProvisioner
 import org.lia.accessibility.voice.asVoiceIdentityVerifier
@@ -45,6 +49,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var talkToLiaButton: Button
     private lateinit var cancelAgentButton: Button
     private lateinit var assistantRoleButton: Button
+    private lateinit var voiceProtectionSwitch: SwitchMaterial
+    private lateinit var bubbleSwitch: SwitchMaterial
+    private lateinit var voiceControlsGroup: View
+    private lateinit var preferences: LiaPreferences
 
     private val worker = Executors.newSingleThreadExecutor()
     private lateinit var recorder: VoiceSampleRecorder
@@ -57,13 +65,12 @@ class MainActivity : AppCompatActivity() {
     private var engine: SherpaSpeakerEngine? = null
     private var commandTranscriber: SherpaWhisperCommandTranscriber? = null
     private var resumeVoiceCommandAfterMicPermission = false
+    private var continueAccessibilitySetupOnResume = false
 
     private val phrases = listOf(
         "Hola Lía, esta es mi voz.",
-        "Lía, ayúdame a usar mi teléfono.",
-        "Quiero que reconozcas mi voz.",
-        "Lía, acompáñame y ayúdame cuando te necesite.",
-        "Esta es mi voz y autorizo a Lía en este dispositivo."
+        "Lía, ayúdame cuando te necesite.",
+        "Esta es mi voz en este dispositivo."
     )
 
     private val microphonePermission =
@@ -96,6 +103,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        preferences = LiaPreferences(this)
         provisioner = VoiceModelProvisioner(this)
         store = VoiceProfileStore(this)
         recorder = VoiceSampleRecorder(this)
@@ -114,6 +122,34 @@ class MainActivity : AppCompatActivity() {
         talkToLiaButton = findViewById(R.id.talkToLiaButton)
         cancelAgentButton = findViewById(R.id.cancelAgentButton)
         assistantRoleButton = findViewById(R.id.assistantRoleButton)
+        voiceProtectionSwitch = findViewById(R.id.voiceProtectionSwitch)
+        bubbleSwitch = findViewById(R.id.bubbleSwitch)
+        voiceControlsGroup = findViewById(R.id.voiceControlsGroup)
+
+        voiceProtectionSwitch.isChecked = preferences.voiceProtectionEnabled
+        bubbleSwitch.isChecked = preferences.bubbleEnabled
+        refreshVoiceProtectionUi()
+
+        voiceProtectionSwitch.setOnCheckedChangeListener { _, enabled ->
+            preferences.voiceProtectionEnabled = enabled
+            refreshVoiceProtectionUi()
+            if (enabled) {
+                status(
+                    if (store.hasProfile()) {
+                        "Protección por voz activa. Tu perfil ya está listo."
+                    } else {
+                        "Protección por voz activa. Registra dos frases para crear tu perfil."
+                    }
+                )
+            } else {
+                commandStatus("Protección por voz desactivada. Lía puede escucharte sin comprobar identidad.")
+            }
+        }
+
+        bubbleSwitch.setOnCheckedChangeListener { _, enabled ->
+            preferences.bubbleEnabled = enabled
+            LiaAccessibilityBridge.setBubbleEnabled(enabled)
+        }
 
         recordButton.setOnClickListener { recordSample() }
         saveButton.setOnClickListener { saveProfile() }
@@ -156,7 +192,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.accessibilitySettingsButton).setOnClickListener {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            openAccessibilitySetup()
         }
 
         findViewById<Button>(R.id.notificationSettingsButton).setOnClickListener {
@@ -168,13 +204,15 @@ class MainActivity : AppCompatActivity() {
         refreshCommandStatus()
         refreshAssistantStatus()
 
-        status(
-            if (store.hasProfile()) {
-                "Tu identidad de voz ya está registrada. Puedes probarla o continuar configurando Lía."
-            } else {
-                "Registra entre 3 y 5 muestras. La primera vez Lía preparará el modelo local de voz."
-            }
-        )
+        if (preferences.voiceProtectionEnabled) {
+            status(
+                if (store.hasProfile()) {
+                    "Tu perfil de voz está listo. Puedes probarlo o volver a registrarlo."
+                } else {
+                    "Con dos frases basta. La primera vez Lía preparará el reconocimiento local."
+                }
+            )
+        }
 
         handleAssistantLaunchIntent(intent)
     }
@@ -189,6 +227,68 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         if (::assistantStatusText.isInitialized) {
             refreshAssistantStatus()
+            if (::bubbleSwitch.isInitialized) {
+                bubbleSwitch.isChecked = preferences.bubbleEnabled
+            }
+        }
+
+        if (continueAccessibilitySetupOnResume) {
+            continueAccessibilitySetupOnResume = false
+            AlertDialog.Builder(this)
+                .setTitle("Ahora activa Lía")
+                .setMessage(
+                    "Si ya tocaste ⋮ y elegiste “Permitir ajustes restringidos”, " +
+                        "abre Accesibilidad y activa “Lía — Asistente de accesibilidad”."
+                )
+                .setPositiveButton("Abrir Accesibilidad") { _, _ ->
+                    openAccessibilitySettings()
+                }
+                .setNegativeButton("Todavía no", null)
+                .show()
+        }
+    }
+
+    private fun openAccessibilitySetup() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            openAccessibilitySettings()
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Android bloqueó temporalmente este permiso")
+            .setMessage(
+                "Como Lía se instaló desde un APK, Android 13 o posterior puede " +
+                    "bloquear el acceso de accesibilidad hasta que tú lo autorices.\n\n" +
+                    "1. Abre la información de Lía.\n" +
+                    "2. Toca ⋮ arriba a la derecha.\n" +
+                    "3. Elige “Permitir ajustes restringidos”.\n" +
+                    "4. Vuelve a Lía y activa su servicio de accesibilidad."
+            )
+            .setPositiveButton("Abrir información de Lía") { _, _ ->
+                continueAccessibilitySetupOnResume = true
+                openAppDetails()
+            }
+            .setNeutralButton("Ya lo permití") { _, _ ->
+                openAccessibilitySettings()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun openAppDetails() {
+        val intent = Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.parse("package:$packageName")
+        )
+        runCatching { startActivity(intent) }
+            .onFailure { startActivity(Intent(Settings.ACTION_SETTINGS)) }
+    }
+
+    private fun openAccessibilitySettings() {
+        runCatching {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }.onFailure {
+            startActivity(Intent(Settings.ACTION_SETTINGS))
         }
     }
 
@@ -229,26 +329,37 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshAssistantStatus() {
-        val active = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        val assistantActive = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val roleManager = getSystemService(RoleManager::class.java)
             roleManager?.isRoleHeld(RoleManager.ROLE_ASSISTANT) == true
         } else {
             false
         }
+        val controlActive = LiaAccessibilityBridge.isConnected()
 
         assistantStatus(
-            if (active) {
-                "Asistente del sistema: Lía está activa."
-            } else {
-                "Asistente del sistema: todavía no seleccionada."
+            when {
+                controlActive && assistantActive ->
+                    "Control de Android activo · Lía también es tu asistente del sistema."
+                controlActive ->
+                    "Control de Android activo. El rol de asistente del sistema es opcional."
+                else ->
+                    "Falta activar el control de Android para que Lía pueda actuar dentro de otras apps."
             }
         )
 
         assistantRoleButton.text =
-            if (active) {
-                "Lía ya es el asistente del sistema"
+            if (assistantActive) {
+                "Asistente del sistema activo"
             } else {
-                "Usar Lía como asistente del sistema"
+                "Usar Lía como asistente"
+            }
+
+        findViewById<Button>(R.id.accessibilitySettingsButton).text =
+            if (controlActive) {
+                "Control de Android activo"
+            } else {
+                "Activar control de Android"
             }
     }
 
@@ -293,58 +404,104 @@ class MainActivity : AppCompatActivity() {
     private fun talkToLia() {
         if (!ensureMicrophonePermission(resumeVoiceCommand = true)) return
 
-        if (!store.hasProfile()) {
-            commandStatus("Primero registra y guarda tu identidad de voz.")
+        val voiceProtection = preferences.voiceProtectionEnabled
+
+        if (voiceProtection && !store.hasProfile()) {
+            commandStatus("La protección por voz está activa. Registra dos frases o desactívala en la sección Voz.")
             return
         }
 
-        if (!provisioner.isInstalled()) {
-            commandStatus("Primero prepara el reconocimiento de identidad de voz.")
+        if (voiceProtection && !provisioner.isInstalled()) {
+            commandStatus("Falta preparar el reconocimiento de identidad de voz.")
             return
         }
 
         if (!commandModelProvisioner.isInstalled()) {
-            commandStatus("Primero prepara el reconocimiento de órdenes offline.")
+            commandStatus("Prepara primero la escucha offline. Solo se descarga una vez.")
             return
         }
 
         if (!plannerModelStore.isInstalled()) {
-            commandStatus("Primero importa el cerebro local .litertlm.")
+            commandStatus("Importa primero tu modelo local GGUF o LiteRT-LM.")
             return
         }
 
         if (!LiaAccessibilityBridge.isConnected()) {
-            commandStatus("Activa primero el control de Android de Lía.")
+            commandStatus("Activa el control de Android de Lía para que pueda ayudarte dentro de otras apps.")
             return
         }
 
         setCommandBusy(true)
-        commandStatus("Te escucho. Di tu orden con normalidad.")
+        commandStatus("Te escucho… habla con naturalidad.")
 
         worker.execute {
-            val result = runCatching {
-                val audio = recorder.record(COMMAND_DURATION_MS)
-                try {
-                    VerifiedVoiceCommandProcessor(
-                        verifier = authenticator().asVoiceIdentityVerifier(),
-                        speechToText = commandTranscriber()
-                    ).process(audio)
-                } finally {
-                    audio.fill(0f)
-                }
+            val audioResult = runCatching {
+                recorder.record(COMMAND_DURATION_MS)
             }
 
-            runOnUiThread {
-                result.onSuccess { command ->
-                    handleVerifiedCommand(command)
-                }.onFailure { error ->
+            audioResult.onFailure { error ->
+                runOnUiThread {
                     commandStatus(
-                        "No pude procesar la orden: " +
-                            (error.message ?: "error desconocido")
+                        "No pude escucharte: " +
+                            (error.message ?: "inténtalo otra vez")
                     )
+                    setCommandBusy(false)
                 }
+                return@execute
+            }
 
-                setCommandBusy(false)
+            val audio = audioResult.getOrThrow()
+
+            try {
+                if (voiceProtection) {
+                    val result = runCatching {
+                        VerifiedVoiceCommandProcessor(
+                            verifier = authenticator().asVoiceIdentityVerifier(),
+                            speechToText = commandTranscriber()
+                        ).process(audio)
+                    }
+
+                    runOnUiThread {
+                        result.onSuccess(::handleVerifiedCommand)
+                            .onFailure { error ->
+                                commandStatus(
+                                    "No pude procesar lo que dijiste: " +
+                                        (error.message ?: "inténtalo otra vez")
+                                )
+                            }
+                        setCommandBusy(false)
+                    }
+                } else {
+                    val result = runCatching {
+                        commandTranscriber().transcribe(audio)
+                    }
+
+                    runOnUiThread {
+                        result.onSuccess { transcript ->
+                            if (transcript.text.isBlank()) {
+                                commandStatus("No alcancé a entenderte. Toca Hablar e inténtalo otra vez.")
+                            } else {
+                                startTranscriptGoal(
+                                    transcript.text,
+                                    VoiceVerification(
+                                        matched = true,
+                                        score = 1f,
+                                        threshold = 0f,
+                                        message = "Protección por voz desactivada por la persona usuaria."
+                                    )
+                                )
+                            }
+                        }.onFailure { error ->
+                            commandStatus(
+                                "No pude entender la orden: " +
+                                    (error.message ?: "inténtalo otra vez")
+                            )
+                        }
+                        setCommandBusy(false)
+                    }
+                }
+            } finally {
+                audio.fill(0f)
             }
         }
     }
@@ -354,27 +511,18 @@ class MainActivity : AppCompatActivity() {
     ) {
         when (result) {
             is VerifiedVoiceCommandResult.Accepted -> {
-                val transcript = result.transcript.text
-                commandStatus("Entendí: “" + transcript + "”. Ejecutando…")
-
-                when (
-                    val bridge = LiaAccessibilityBridge.startGoal(
-                        goal = transcript,
-                        verification = result.verification
-                    )
-                ) {
-                    AccessibilityBridgeResult.Started -> Unit
-                    is AccessibilityBridgeResult.Unavailable ->
-                        commandStatus(bridge.reason)
-                }
+                startTranscriptGoal(
+                    transcript = result.transcript.text,
+                    verification = result.verification
+                )
             }
 
             is VerifiedVoiceCommandResult.VoiceRejected -> {
                 val score = (result.verification.score * 100).roundToInt()
                 commandStatus(
-                    "Voz rechazada. Coincidencia: " +
+                    "No estoy segura de que seas tú (" +
                         score +
-                        " %. No ejecutaré la orden."
+                        " %). Inténtalo otra vez o desactiva Protección por voz."
                 )
             }
 
@@ -385,6 +533,24 @@ class MainActivity : AppCompatActivity() {
 
             is VerifiedVoiceCommandResult.Failed ->
                 commandStatus(result.reason)
+        }
+    }
+
+    private fun startTranscriptGoal(
+        transcript: String,
+        verification: VoiceVerification
+    ) {
+        commandStatus("Entendí: “$transcript”. Pensando…")
+
+        when (
+            val bridge = LiaAccessibilityBridge.startGoal(
+                goal = transcript,
+                verification = verification
+            )
+        ) {
+            AccessibilityBridgeResult.Started -> Unit
+            is AccessibilityBridgeResult.Unavailable ->
+                commandStatus(bridge.reason)
         }
     }
 
@@ -404,9 +570,9 @@ class MainActivity : AppCompatActivity() {
 
         commandStatus(
             if (installed) {
-                "Reconocimiento de órdenes offline listo."
+                "Escucha offline lista. Puedes hablar con Lía sin conexión."
             } else {
-                "Reconocimiento de órdenes: falta descargar el modelo multilingüe (~111 MB)."
+                "Falta preparar la escucha offline (~111 MB). Se descarga una sola vez."
             }
         )
 
@@ -426,7 +592,7 @@ class MainActivity : AppCompatActivity() {
 
         worker.execute {
             val result = runCatching {
-                val sourceName = displayName(uri) ?: "planner.litertlm"
+                val sourceName = displayName(uri) ?: "modelo-local"
                 contentResolver.openInputStream(uri).use { input ->
                     requireNotNull(input) {
                         "Android no permitió abrir el archivo seleccionado."
@@ -442,11 +608,11 @@ class MainActivity : AppCompatActivity() {
                 result.onSuccess { info ->
                     val megabytes = info.sizeBytes / (1024L * 1024L)
                     plannerStatus(
-                        "Modelo local instalado: " +
+                        "Conectado · " +
+                            info.format.displayName +
+                            " · " +
                             megabytes +
-                            " MB. SHA-256: " +
-                            info.sha256.take(12) +
-                            "…"
+                            " MB"
                     )
                 }.onFailure { error ->
                     plannerStatus(
@@ -488,25 +654,25 @@ class MainActivity : AppCompatActivity() {
 
         if (model == null) {
             plannerStatus(
-                "Cerebro local: no instalado. Puedes importar un archivo .litertlm."
+                "Todavía no hay un modelo conectado. Importa el que ya descargaste."
             )
             return
         }
 
         val megabytes = model.sizeBytes / (1024L * 1024L)
         plannerStatus(
-            "Cerebro local listo: " +
+            "Conectado · " +
+                model.format.displayName +
+                " · " +
                 megabytes +
-                " MB · " +
-                model.sha256.take(12) +
-                "…"
+                " MB"
         )
     }
 
     private fun recordSample() {
         if (!ensureMicrophonePermission()) return
         if (samples.size >= OwnerVoiceAuthenticator.MAX_SAMPLES) {
-            status("Ya tienes 5 muestras. Guarda el perfil.")
+            status("Ya tienes suficientes frases. Guarda el perfil.")
             return
         }
 
@@ -534,7 +700,7 @@ class MainActivity : AppCompatActivity() {
                     samples += it
                     status(
                         "Muestra " + samples.size + " registrada. " +
-                            if (samples.size >= 3) "Ya puedes guardar o registrar hasta 5." else "Continúa con otra muestra."
+                            if (samples.size >= OwnerVoiceAuthenticator.MIN_SAMPLES) "Ya puedes guardar tu voz." else "Registra una frase más."
                     )
                 }.onFailure {
                     status("No pude usar esa muestra: " + (it.message ?: "error desconocido"))
@@ -565,7 +731,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun saveProfile() {
         if (samples.size !in OwnerVoiceAuthenticator.MIN_SAMPLES..OwnerVoiceAuthenticator.MAX_SAMPLES) {
-            status("Necesito entre 3 y 5 muestras antes de guardar.")
+            status("Necesito dos frases antes de guardar tu voz.")
             return
         }
 
@@ -578,7 +744,7 @@ class MainActivity : AppCompatActivity() {
                         val consistency = (quality.averageSimilarity * 100).roundToInt()
                         samples.forEach { it.fill(0f) }
                         samples.clear()
-                        status("Identidad de voz guardada y cifrada. Coherencia: " + consistency + " %.")
+                        status("Listo. Ya puedo reconocer mejor tu voz. Coincidencia del perfil: " + consistency + " %.")
                     } else {
                         status(quality.message)
                     }
@@ -622,7 +788,7 @@ class MainActivity : AppCompatActivity() {
                         if (verification.matched) {
                             "Voz reconocida. Coincidencia: " + score + " %."
                         } else {
-                            "Voz rechazada. Coincidencia: " + score + " %. " + verification.message
+                            "No estoy segura de que seas tú. Coincidencia: " + score + " %. Puedes probar otra vez."
                         }
                     )
                 }.onFailure {
@@ -654,6 +820,12 @@ class MainActivity : AppCompatActivity() {
         resumeVoiceCommandAfterMicPermission = resumeVoiceCommand
         microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
         return false
+    }
+
+    private fun refreshVoiceProtectionUi() {
+        if (!::voiceControlsGroup.isInitialized) return
+        voiceControlsGroup.visibility =
+            if (preferences.voiceProtectionEnabled) View.VISIBLE else View.GONE
     }
 
     private fun setBusy(busy: Boolean) {
