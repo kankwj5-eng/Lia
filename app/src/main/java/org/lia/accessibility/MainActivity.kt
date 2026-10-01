@@ -570,9 +570,9 @@ class MainActivity : AppCompatActivity() {
 
         commandStatus(
             if (installed) {
-                "Reconocimiento de órdenes offline listo."
+                "Escucha offline lista. Puedes hablar con Lía sin conexión."
             } else {
-                "Reconocimiento de órdenes: falta descargar el modelo multilingüe (~111 MB)."
+                "Falta preparar la escucha offline (~111 MB). Se descarga una sola vez."
             }
         )
 
@@ -608,13 +608,11 @@ class MainActivity : AppCompatActivity() {
                 result.onSuccess { info ->
                     val megabytes = info.sizeBytes / (1024L * 1024L)
                     plannerStatus(
-                        "Modelo local conectado: " +
+                        "Conectado · " +
                             info.format.displayName +
                             " · " +
                             megabytes +
-                            " MB · SHA-256 " +
-                            info.sha256.take(12) +
-                            "…"
+                            " MB"
                     )
                 }.onFailure { error ->
                     plannerStatus(
@@ -656,20 +654,18 @@ class MainActivity : AppCompatActivity() {
 
         if (model == null) {
             plannerStatus(
-                "Cerebro local: no instalado. Importa el modelo que ya descargaste (.gguf o .litertlm)."
+                "Todavía no hay un modelo conectado. Importa el que ya descargaste."
             )
             return
         }
 
         val megabytes = model.sizeBytes / (1024L * 1024L)
         plannerStatus(
-            "Cerebro local listo: " +
+            "Conectado · " +
                 model.format.displayName +
                 " · " +
                 megabytes +
-                " MB · " +
-                model.sha256.take(12) +
-                "…"
+                " MB"
         )
     }
 
