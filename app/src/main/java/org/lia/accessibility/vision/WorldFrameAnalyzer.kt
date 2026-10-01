@@ -41,7 +41,7 @@ class WorldFrameAnalyzer(
         analyzeNext.set(true)
     }
 
-    @OptIn(ExperimentalGetImage::class)
+    @androidx.annotation.OptIn(markerClass = [ExperimentalGetImage::class])
     override fun analyze(imageProxy: ImageProxy) {
         if (!analyzeNext.compareAndSet(true, false)) {
             imageProxy.close()
