@@ -8,28 +8,74 @@ DIAG="build/emulator-diagnostics"
 
 mkdir -p "$DIAG"
 
-adb wait-for-device
-adb logcat -c
+adb_retry() {
+  local attempts=0
+  until "$@"; do
+    attempts=$((attempts + 1))
+    if [ "$attempts" -ge 6 ]; then
+      return 1
+    fi
+    sleep 2
+  done
+}
+
+echo "== Wait for Android =="
+adb start-server >/dev/null
+adb_retry adb wait-for-device
+
+booted=""
+for _ in $(seq 1 60); do
+  booted="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+  if [ "$booted" = "1" ]; then
+    break
+  fi
+  sleep 2
+done
+
+if [ "$booted" != "1" ]; then
+  echo "Android did not finish booting."
+  exit 1
+fi
+
+adb_retry adb shell input keyevent 82 >/dev/null 2>&1 || true
+adb_retry adb logcat -c
 
 echo "== Instrumented tests =="
 gradle :app:connectedDebugAndroidTest --stacktrace
 
-echo "== Install and launch Lía =="
-adb install -r "$APK" >/dev/null
+echo "== Install and verify Lía package =="
+adb_retry adb install -r "$APK" >/dev/null
 
-# CI emulator only: enable the accessibility service so Android registration is tested.
-adb shell settings put secure enabled_accessibility_services "$SERVICE"
-adb shell settings put secure accessibility_enabled 1
-sleep 2
-
-adb shell dumpsys accessibility > "$DIAG/accessibility.txt"
-if ! grep -q "LiaAccessibilityService" "$DIAG/accessibility.txt"; then
-  echo "Lía accessibility service was not registered by Android."
+adb shell dumpsys package "$PACKAGE" > "$DIAG/package.txt"
+if ! grep -q "LiaAccessibilityService" "$DIAG/package.txt"; then
+  echo "Android package manager did not register LiaAccessibilityService."
   exit 1
 fi
 
-adb shell am force-stop "$PACKAGE"
-adb shell monkey -p "$PACKAGE" -c android.intent.category.LAUNCHER 1 >/dev/null
+echo "== Enable Lía accessibility service in CI emulator =="
+adb_retry adb shell settings put secure enabled_accessibility_services "$SERVICE"
+adb_retry adb shell settings put secure accessibility_enabled 1
+
+enabled=""
+for _ in $(seq 1 15); do
+  enabled="$(adb shell settings get secure enabled_accessibility_services 2>/dev/null | tr -d '\r' || true)"
+  if printf '%s' "$enabled" | grep -q "LiaAccessibilityService"; then
+    break
+  fi
+  sleep 1
+done
+
+adb shell dumpsys accessibility > "$DIAG/accessibility.txt" || true
+adb shell settings get secure enabled_accessibility_services > "$DIAG/enabled-accessibility-services.txt" || true
+
+if ! printf '%s' "$enabled" | grep -q "LiaAccessibilityService"; then
+  echo "Android did not persist Lía as an enabled accessibility service."
+  exit 1
+fi
+
+echo "== Launch Lía =="
+adb_retry adb shell am force-stop "$PACKAGE"
+adb_retry adb shell monkey -p "$PACKAGE" -c android.intent.category.LAUNCHER 1 >/dev/null
 sleep 3
 
 echo "== Capture diagnostics =="
