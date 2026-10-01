@@ -3,6 +3,9 @@ package org.lia.accessibility.agent
 import androidx.core.content.ContextCompat
 import org.lia.accessibility.accessibility.LiaAccessibilityService
 import org.lia.accessibility.ai.LiteRtLmLanguageModel
+import org.lia.accessibility.ai.LlamaCppLanguageModel
+import org.lia.accessibility.ai.ManagedLocalLanguageModel
+import org.lia.accessibility.ai.PlannerModelFormat
 import org.lia.accessibility.ai.PlannerModelStore
 import org.lia.accessibility.voice.VoiceVerification
 import java.io.Closeable
@@ -27,7 +30,7 @@ class LiaAgentCoordinator(
     private var currentRuntime: LiaLocalAgentRuntime? = null
 
     @Volatile
-    private var currentModel: LiteRtLmLanguageModel? = null
+    private var currentModel: ManagedLocalLanguageModel? = null
 
     fun start(
         goal: String,
@@ -45,7 +48,7 @@ class LiaAgentCoordinator(
                 deliver(
                     runGeneration,
                     LocalAgentOutcome.Failed(
-                        reason = "No hay un cerebro local .litertlm instalado.",
+                        reason = "No hay un cerebro local instalado. Importa un modelo GGUF o LiteRT-LM.",
                         events = emptyList()
                     ),
                     callback
@@ -53,10 +56,20 @@ class LiaAgentCoordinator(
                 return@execute
             }
 
-            val model = LiteRtLmLanguageModel(
-                context = service,
-                modelFile = modelInfo.file
-            )
+            val model: ManagedLocalLanguageModel = when (modelInfo.format) {
+                PlannerModelFormat.GGUF ->
+                    LlamaCppLanguageModel(
+                        context = service,
+                        modelFile = modelInfo.file,
+                        sourceName = modelInfo.sourceName
+                    )
+
+                PlannerModelFormat.LITERT_LM ->
+                    LiteRtLmLanguageModel(
+                        context = service,
+                        modelFile = modelInfo.file
+                    )
+            }
 
             val runtime = LiaLocalAgentRuntime(
                 service = service,
