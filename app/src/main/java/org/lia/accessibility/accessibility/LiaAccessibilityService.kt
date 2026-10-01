@@ -6,6 +6,8 @@ import android.content.Intent
 import android.graphics.Path
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
+import org.lia.accessibility.agent.LiaAgentCoordinator
+import org.lia.accessibility.agent.LocalAgentOutcome
 import org.lia.accessibility.agent.PhoneState
 import org.lia.accessibility.agent.PhoneStateProvider
 import org.lia.accessibility.device.DeviceEventMonitor
@@ -29,6 +31,7 @@ class LiaAccessibilityService : AccessibilityService() {
     private lateinit var screenshotProvider: AccessibilityScreenshotProvider
     private lateinit var screenOcrReader: ScreenOcrReader
     private lateinit var phoneStateProvider: PhoneStateProvider
+    private lateinit var agentCoordinator: LiaAgentCoordinator
     private var deviceEvents: DeviceEventMonitor? = null
 
     @Volatile
@@ -43,6 +46,7 @@ class LiaAccessibilityService : AccessibilityService() {
         screenshotProvider = AccessibilityScreenshotProvider(this)
         screenOcrReader = ScreenOcrReader()
         phoneStateProvider = PhoneStateProvider(this)
+        agentCoordinator = LiaAgentCoordinator(this)
 
         deviceEvents = DeviceEventMonitor(
             context = this,
@@ -161,6 +165,71 @@ class LiaAccessibilityService : AccessibilityService() {
     internal fun capturePhoneState(): PhoneState =
         phoneStateProvider.capture()
 
+    internal fun startLocalAgentGoal(
+        goal: String,
+        voice: VoiceVerification
+    ) {
+        if (!::agentCoordinator.isInitialized) {
+            emitAgentState(
+                status = "failed",
+                message = "El coordinador local todavía no está disponible."
+            )
+            return
+        }
+
+        agentCoordinator.start(goal, voice) { outcome ->
+            when (outcome) {
+                is LocalAgentOutcome.Completed -> {
+                    performSystemCommand(
+                        voice = voice,
+                        command = SystemCommand.Speak(outcome.result)
+                    )
+                    emitAgentState(
+                        status = "completed",
+                        message = outcome.result
+                    )
+                }
+
+                is LocalAgentOutcome.NeedsAuthorization -> {
+                    performSystemCommand(
+                        voice = voice,
+                        command = SystemCommand.Speak(outcome.reason)
+                    )
+                    emitAgentState(
+                        status = "authorization_required",
+                        message = outcome.reason,
+                        toolName = outcome.call.name,
+                        risk = outcome.risk.name
+                    )
+                }
+
+                is LocalAgentOutcome.Failed -> {
+                    performSystemCommand(
+                        voice = voice,
+                        command = SystemCommand.Speak(outcome.reason)
+                    )
+                    emitAgentState(
+                        status = "failed",
+                        message = outcome.reason
+                    )
+                }
+
+                is LocalAgentOutcome.Cancelled -> {
+                    emitAgentState(
+                        status = "cancelled",
+                        message = "Tarea cancelada."
+                    )
+                }
+            }
+        }
+    }
+
+    internal fun cancelLocalAgentGoal() {
+        if (::agentCoordinator.isInitialized) {
+            agentCoordinator.cancel()
+        }
+    }
+
     internal fun goBack(): Boolean = performGlobalAction(GLOBAL_ACTION_BACK)
     internal fun goHome(): Boolean = performGlobalAction(GLOBAL_ACTION_HOME)
     internal fun openRecents(): Boolean = performGlobalAction(GLOBAL_ACTION_RECENTS)
@@ -205,9 +274,30 @@ class LiaAccessibilityService : AccessibilityService() {
         )
     }
 
+    private fun emitAgentState(
+        status: String,
+        message: String,
+        toolName: String? = null,
+        risk: String? = null
+    ) {
+        sendBroadcast(
+            Intent(ACTION_AGENT_STATE)
+                .setPackage(packageName)
+                .putExtra(EXTRA_AGENT_STATUS, status)
+                .putExtra(EXTRA_MESSAGE, message)
+                .apply {
+                    toolName?.let { putExtra(EXTRA_TOOL_NAME, it) }
+                    risk?.let { putExtra(EXTRA_RISK, it) }
+                }
+        )
+    }
+
     override fun onDestroy() {
         deviceEvents?.stop()
         deviceEvents = null
+        if (::agentCoordinator.isInitialized) {
+            agentCoordinator.close()
+        }
         if (::screenOcrReader.isInitialized) {
             screenOcrReader.close()
         }
@@ -221,7 +311,11 @@ class LiaAccessibilityService : AccessibilityService() {
         const val ACTION_SOS_TRIGGERED = "org.lia.accessibility.action.SOS_TRIGGERED"
         const val ACTION_ACTIVATE_LIA = "org.lia.accessibility.action.ACTIVATE_LIA"
         const val ACTION_DEVICE_WARNING = "org.lia.accessibility.action.DEVICE_WARNING"
+        const val ACTION_AGENT_STATE = "org.lia.accessibility.action.AGENT_STATE"
         const val EXTRA_SOURCE = "source"
         const val EXTRA_MESSAGE = "message"
+        const val EXTRA_AGENT_STATUS = "agent_status"
+        const val EXTRA_TOOL_NAME = "tool_name"
+        const val EXTRA_RISK = "risk"
     }
 }
