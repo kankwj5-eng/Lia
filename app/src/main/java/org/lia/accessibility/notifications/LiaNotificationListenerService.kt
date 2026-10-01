@@ -7,7 +7,7 @@ import android.service.notification.StatusBarNotification
 
 class LiaNotificationListenerService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        val notification = sbn.notification ?: return
+        val notification = sbn.notification
         val extras = notification.extras
 
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()
@@ -20,6 +20,11 @@ class LiaNotificationListenerService : NotificationListenerService() {
             packageManager.getApplicationLabel(info).toString()
         }.getOrNull()
 
+        val replyAvailable = NotificationReplyRegistry.register(
+            notificationKey = sbn.key,
+            actions = notification.actions
+        )
+
         val item = LiaNotification(
             key = sbn.key,
             packageName = sbn.packageName,
@@ -28,7 +33,8 @@ class LiaNotificationListenerService : NotificationListenerService() {
             text = bigText ?: normalText,
             subText = subText,
             postedAtEpochMs = sbn.postTime,
-            ongoing = sbn.isOngoing
+            ongoing = sbn.isOngoing,
+            replyAvailable = replyAvailable
         )
 
         NotificationStore.put(item)
@@ -38,10 +44,12 @@ class LiaNotificationListenerService : NotificationListenerService() {
                 .setPackage(packageName)
                 .putExtra(EXTRA_NOTIFICATION_KEY, sbn.key)
                 .putExtra(EXTRA_SOURCE_PACKAGE, sbn.packageName)
+                .putExtra(EXTRA_REPLY_AVAILABLE, replyAvailable)
         )
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
+        NotificationReplyRegistry.unregister(sbn.key)
         NotificationStore.remove(sbn.key)
     }
 
@@ -50,5 +58,6 @@ class LiaNotificationListenerService : NotificationListenerService() {
             "org.lia.accessibility.action.NOTIFICATION_CONTEXT_CHANGED"
         const val EXTRA_NOTIFICATION_KEY = "notification_key"
         const val EXTRA_SOURCE_PACKAGE = "source_package"
+        const val EXTRA_REPLY_AVAILABLE = "reply_available"
     }
 }
