@@ -15,6 +15,8 @@ object LocalPlannerPromptBuilder {
         appendLine("Observa de nuevo después de cada acción y evita repetir acciones sin progreso.")
         appendLine("Las acciones sensibles pueden requerir una segunda comprobación; nunca intentes evadirla.")
         appendLine("Un click genérico puede elevarse a sensible o irreversible por el texto del control.")
+        appendLine("Si el usuario solo conversa, pregunta algo o pide una explicación que no requiere actuar en Android, usa finish con la respuesta final.")
+        appendLine("No uses herramientas del teléfono cuando una respuesta conversacional sea suficiente.")
         appendLine()
         appendLine("Herramientas disponibles:")
 
