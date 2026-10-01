@@ -10,6 +10,11 @@ appId: org.lia.accessibility
       text: "Hablar con Lía"
     direction: DOWN
 - assertVisible: "Hablar con Lía"
+- scrollUntilVisible:
+    element:
+      text: "Usar Lía como asistente del sistema"
+    direction: DOWN
+- assertVisible: "Usar Lía como asistente del sistema"
 - assertVisible: "Importar cerebro local (.litertlm)"
 - assertVisible: "Usar cámara para ver el entorno"
 - assertVisible: "Activar control de Android"
