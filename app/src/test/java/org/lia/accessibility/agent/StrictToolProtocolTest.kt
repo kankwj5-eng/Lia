@@ -61,6 +61,18 @@ class StrictToolProtocolTest {
     }
 
     @Test
+    fun acceptsJsonAfterQwenThinkingWrapper() {
+        val result = StrictToolProtocol.parse(
+            "<think>razonamiento interno</think>\n" +
+                "{\"tool\":\"home\",\"arguments\":{}}"
+        )
+
+        assertTrue(result is ToolProtocolResult.Accepted)
+        val call = (result as ToolProtocolResult.Accepted).call
+        assertEquals("home", call.name)
+    }
+
+    @Test
     fun actionKeyIsDeterministic() {
         val a = StrictToolProtocol.validate(
             "compose_sms",
