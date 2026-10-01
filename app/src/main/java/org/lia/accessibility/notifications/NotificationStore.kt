@@ -10,7 +10,8 @@ data class LiaNotification(
     val text: String?,
     val subText: String?,
     val postedAtEpochMs: Long,
-    val ongoing: Boolean
+    val ongoing: Boolean,
+    val replyAvailable: Boolean
 ) {
     fun spokenSummary(): String {
         val source = appLabel ?: packageName
@@ -19,7 +20,18 @@ data class LiaNotification(
             text?.takeIf { it.isNotBlank() },
             subText?.takeIf { it.isNotBlank() }
         ).distinct()
-        return if (parts.isEmpty()) source else source + ": " + parts.joinToString(". ")
+
+        val replyHint = if (replyAvailable) {
+            " Puedes responder desde Lía."
+        } else {
+            ""
+        }
+
+        return if (parts.isEmpty()) {
+            source + replyHint
+        } else {
+            source + ": " + parts.joinToString(". ") + replyHint
+        }
     }
 }
 
@@ -35,6 +47,8 @@ object NotificationStore {
     fun remove(key: String) {
         items.remove(key)
     }
+
+    fun find(key: String): LiaNotification? = items[key]
 
     fun recent(limit: Int = 20): List<LiaNotification> =
         items.values
