@@ -79,6 +79,98 @@ class LiaMicroAgentTest {
     }
 
     @Test
+    fun cancelsStaleActionWhenScreenChangesAfterPlanning() {
+        var observations = 0
+        var executions = 0
+
+        val env = object : AgentEnvironment<Action> {
+            override fun observe(): AgentObservation {
+                observations++
+                val fingerprint = if (observations == 1) "screen-a" else "screen-b"
+                return AgentObservation(fingerprint, fingerprint)
+            }
+
+            override fun execute(action: Action): ToolOutcome {
+                executions++
+                return ToolOutcome(true, true, "no debería ejecutarse")
+            }
+
+            override fun verify(
+                before: AgentObservation,
+                after: AgentObservation,
+                action: Action,
+                outcome: ToolOutcome
+            ) = VerificationOutcome(false, message = "sin progreso")
+        }
+
+        var plannerCalls = 0
+        val agent = LiaMicroAgent(
+            environment = env,
+            planner = AgentPlanner {
+                plannerCalls++
+                if (plannerCalls == 1) {
+                    AgentDecision.Act(Action("tap"), "tap:stale")
+                } else {
+                    AgentDecision.Fail("detener prueba")
+                }
+            },
+            config = AgentConfig(maxSteps = 3, maxRecoveries = 3)
+        )
+
+        val result = agent.run("prueba de frescura")
+        assertFalse(result.success)
+        assertTrue(executions == 0)
+        assertTrue(
+            result.events.any {
+                it.type == AgentEventType.RECOVERY &&
+                    it.message.contains("acción obsoleta")
+            }
+        )
+    }
+
+    @Test
+    fun plannerFinishRequiresEnvironmentVerification() {
+        var finishChecks = 0
+
+        val env = object : AgentEnvironment<Action> {
+            override fun observe() =
+                AgentObservation("screen", "estado")
+
+            override fun execute(action: Action) =
+                ToolOutcome(true, true, "ok")
+
+            override fun verify(
+                before: AgentObservation,
+                after: AgentObservation,
+                action: Action,
+                outcome: ToolOutcome
+            ) = VerificationOutcome(true, message = "progreso")
+
+            override fun verifyCompletion(
+                observation: AgentObservation,
+                proposedResult: String
+            ): VerificationOutcome {
+                finishChecks++
+                return VerificationOutcome(
+                    progress = false,
+                    completed = false,
+                    message = "el entorno no confirma"
+                )
+            }
+        }
+
+        val agent = LiaMicroAgent(
+            environment = env,
+            planner = AgentPlanner { AgentDecision.Finish("listo") },
+            config = AgentConfig(maxSteps = 2, maxRecoveries = 0)
+        )
+
+        val result = agent.run("objetivo")
+        assertFalse(result.success)
+        assertTrue(finishChecks >= 1)
+    }
+
+    @Test
     fun retriesOnlyWhenPlannerMarksActionSafe() {
         var executions = 0
 
