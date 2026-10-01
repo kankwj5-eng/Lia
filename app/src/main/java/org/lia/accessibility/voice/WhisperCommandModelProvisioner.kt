@@ -82,6 +82,9 @@ class WhisperCommandModelProvisioner(
         onProgress: (ModelDownloadProgress) -> Unit = {}
     ): WhisperCommandModelInfo {
         root.mkdirs()
+        require(root.usableSpace >= MIN_REQUIRED_FREE_BYTES) {
+            "No hay suficiente espacio libre para preparar el reconocimiento de órdenes."
+        }
 
         val archive = File(root, "whisper-tiny.tar.bz2.tmp")
         val staging = File(root, "model.tmp")
@@ -229,6 +232,9 @@ class WhisperCommandModelProvisioner(
         while (true) {
             require(current.scheme.equals("https", ignoreCase = true)) {
                 "Lía solo permite descargar modelos mediante HTTPS."
+            }
+            require(current.host.lowercase() in ALLOWED_MODEL_HOSTS) {
+                "La descarga fue redirigida a un host no autorizado."
             }
 
             val connection = current.toURL().openConnection() as HttpURLConnection
@@ -408,6 +414,7 @@ class WhisperCommandModelProvisioner(
         private const val MAX_ONNX_BYTES = 512L * 1024L * 1024L
         private const val MAX_TOKENS_BYTES = 32L * 1024L * 1024L
         private const val MAX_ARCHIVE_BYTES = 130L * 1024L * 1024L
+        private const val MIN_REQUIRED_FREE_BYTES = 450L * 1024L * 1024L
 
         private const val DOWNLOAD_BUFFER_BYTES = 64 * 1024
         private const val EXTRACT_BUFFER_BYTES = 64 * 1024
@@ -416,5 +423,11 @@ class WhisperCommandModelProvisioner(
         private const val CONNECT_TIMEOUT_MS = 20_000
         private const val READ_TIMEOUT_MS = 45_000
         private const val MAX_REDIRECTS = 5
+
+        private val ALLOWED_MODEL_HOSTS = setOf(
+            "github.com",
+            "release-assets.githubusercontent.com",
+            "objects.githubusercontent.com"
+        )
     }
 }
