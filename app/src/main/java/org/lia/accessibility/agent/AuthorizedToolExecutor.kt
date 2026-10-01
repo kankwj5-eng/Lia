@@ -2,6 +2,8 @@ package org.lia.accessibility.agent
 
 import org.lia.accessibility.accessibility.LiaAccessibilityService
 import org.lia.accessibility.accessibility.ScreenObservationResult
+import org.lia.accessibility.security.AuthorizationDecision
+import org.lia.accessibility.security.CommandAuthorizationGate
 import org.lia.accessibility.voice.VoiceVerification
 
 data class ToolExecutionResult(
@@ -14,7 +16,8 @@ data class ToolExecutionResult(
 )
 
 class AuthorizedToolExecutor(
-    private val service: LiaAccessibilityService
+    private val service: LiaAccessibilityService,
+    private val authorizationGate: CommandAuthorizationGate = CommandAuthorizationGate()
 ) {
     fun execute(
         call: LiaToolCall,
@@ -33,13 +36,14 @@ class AuthorizedToolExecutor(
         }
 
         val action = (routed as ToolRoutingResult.Routed).action
+        val effectiveRisk = EffectiveToolRiskPolicy.effectiveRisk(call)
 
         return when (action) {
             is RoutedToolAction.Ui -> {
                 val result = service.performAuthorizedAction(
                     voice = voice,
                     action = action.action,
-                    risk = call.risk,
+                    risk = effectiveRisk,
                     secondFactorSatisfied = secondFactorSatisfied,
                     explicitConfirmation = explicitConfirmation
                 )
@@ -90,27 +94,30 @@ class AuthorizedToolExecutor(
             }
 
             RoutedToolAction.ReadScreenOcr ->
-                ToolExecutionResult(
-                    accepted = true,
-                    performed = false,
-                    message = "OCR requiere el manejador asíncrono del agente.",
-                    requiresAsyncHandler = true
+                asyncResult(
+                    voice = voice,
+                    risk = effectiveRisk,
+                    secondFactorSatisfied = secondFactorSatisfied,
+                    explicitConfirmation = explicitConfirmation,
+                    message = "OCR requiere el manejador asíncrono del agente."
                 )
 
             RoutedToolAction.GetLocation ->
-                ToolExecutionResult(
-                    accepted = true,
-                    performed = false,
-                    message = "Ubicación requiere el manejador asíncrono del agente.",
-                    requiresAsyncHandler = true
+                asyncResult(
+                    voice = voice,
+                    risk = effectiveRisk,
+                    secondFactorSatisfied = secondFactorSatisfied,
+                    explicitConfirmation = explicitConfirmation,
+                    message = "Ubicación requiere el manejador asíncrono del agente."
                 )
 
             RoutedToolAction.WorldVision ->
-                ToolExecutionResult(
-                    accepted = true,
-                    performed = false,
-                    message = "Visión del entorno requiere el manejador asíncrono del agente.",
-                    requiresAsyncHandler = true
+                asyncResult(
+                    voice = voice,
+                    risk = effectiveRisk,
+                    secondFactorSatisfied = secondFactorSatisfied,
+                    explicitConfirmation = explicitConfirmation,
+                    message = "Visión del entorno requiere el manejador asíncrono del agente."
                 )
 
             is RoutedToolAction.Finish ->
@@ -122,4 +129,42 @@ class AuthorizedToolExecutor(
                 )
         }
     }
+
+    private fun asyncResult(
+        voice: VoiceVerification,
+        risk: org.lia.accessibility.security.ActionRisk,
+        secondFactorSatisfied: Boolean,
+        explicitConfirmation: Boolean,
+        message: String
+    ): ToolExecutionResult {
+        val authorization = authorizationGate.authorize(
+            voice = voice,
+            risk = risk,
+            secondFactorSatisfied = secondFactorSatisfied,
+            explicitConfirmation = explicitConfirmation
+        )
+
+        return if (authorization is AuthorizationDecision.Allowed) {
+            ToolExecutionResult(
+                accepted = true,
+                performed = false,
+                message = message,
+                requiresAsyncHandler = true
+            )
+        } else {
+            ToolExecutionResult(
+                accepted = false,
+                performed = false,
+                message = authorizationMessage(authorization)
+            )
+        }
+    }
+
+    private fun authorizationMessage(decision: AuthorizationDecision): String =
+        when (decision) {
+            AuthorizationDecision.Allowed -> "Autorizado."
+            is AuthorizationDecision.Denied -> decision.reason
+            is AuthorizationDecision.NeedsSecondFactor -> decision.reason
+            is AuthorizationDecision.NeedsExplicitConfirmation -> decision.reason
+        }
 }
