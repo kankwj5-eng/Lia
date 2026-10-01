@@ -32,7 +32,7 @@ class OwnerVoiceAuthenticator(
 
     fun evaluateEnrollment(embeddings: List<FloatArray>): EnrollmentQuality {
         if (embeddings.size !in MIN_SAMPLES..MAX_SAMPLES) {
-            return EnrollmentQuality(false, 0f, 0f, "Se requieren entre 3 y 5 muestras.")
+            return EnrollmentQuality(false, 0f, 0f, "Con dos o tres frases es suficiente.")
         }
         if (embeddings.any { it.size != engine.dimension }) {
             return EnrollmentQuality(false, 0f, 0f, "Las muestras no son compatibles.")
@@ -48,7 +48,7 @@ class OwnerVoiceAuthenticator(
             average,
             minimum,
             if (accepted) "Las muestras forman un perfil coherente."
-            else "Las muestras no son suficientemente parecidas. Repite el registro en un lugar tranquilo."
+            else "Las frases sonaron muy distintas. Prueba una vez más hablando con normalidad."
         )
     }
 
@@ -91,11 +91,11 @@ class OwnerVoiceAuthenticator(
     }
 
     companion object {
-        const val MIN_SAMPLES = 3
-        const val MAX_SAMPLES = 5
-        const val DEFAULT_THRESHOLD = 0.62f
-        const val ENROLLMENT_MEAN = 0.55f
-        const val ENROLLMENT_MIN_PAIR = 0.42f
+        const val MIN_SAMPLES = 2
+        const val MAX_SAMPLES = 3
+        const val DEFAULT_THRESHOLD = 0.58f
+        const val ENROLLMENT_MEAN = 0.48f
+        const val ENROLLMENT_MIN_PAIR = 0.35f
         const val CORROBORATION_MARGIN = 0.03f
     }
 }
