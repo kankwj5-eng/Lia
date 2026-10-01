@@ -1,10 +1,12 @@
 package org.lia.accessibility
 
 import android.Manifest
+import android.app.role.RoleManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
 import android.provider.Settings
@@ -34,6 +36,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusText: TextView
     private lateinit var plannerStatusText: TextView
     private lateinit var commandStatusText: TextView
+    private lateinit var assistantStatusText: TextView
     private lateinit var recordButton: Button
     private lateinit var saveButton: Button
     private lateinit var testButton: Button
@@ -41,6 +44,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var prepareCommandSpeechButton: Button
     private lateinit var talkToLiaButton: Button
     private lateinit var cancelAgentButton: Button
+    private lateinit var assistantRoleButton: Button
 
     private val worker = Executors.newSingleThreadExecutor()
     private lateinit var recorder: VoiceSampleRecorder
@@ -52,6 +56,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var commandModelProvisioner: WhisperCommandModelProvisioner
     private var engine: SherpaSpeakerEngine? = null
     private var commandTranscriber: SherpaWhisperCommandTranscriber? = null
+    private var resumeVoiceCommandAfterMicPermission = false
 
     private val phrases = listOf(
         "Hola Lía, esta es mi voz.",
@@ -63,8 +68,21 @@ class MainActivity : AppCompatActivity() {
 
     private val microphonePermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) status("Micrófono autorizado. Pulsa registrar muestra otra vez.")
-            else status("Lía necesita acceso al micrófono para registrar tu identidad de voz.")
+            if (granted && resumeVoiceCommandAfterMicPermission) {
+                resumeVoiceCommandAfterMicPermission = false
+                talkToLia()
+            } else if (granted) {
+                status("Micrófono autorizado. Pulsa registrar muestra otra vez.")
+            } else {
+                resumeVoiceCommandAfterMicPermission = false
+                status("Lía necesita acceso al micrófono para registrar tu identidad de voz.")
+                commandStatus("Sin permiso de micrófono no puedo escuchar órdenes.")
+            }
+        }
+
+    private val assistantRoleRequest =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            refreshAssistantStatus()
         }
 
     private val plannerModelPicker =
@@ -87,6 +105,7 @@ class MainActivity : AppCompatActivity() {
         statusText = findViewById(R.id.statusText)
         plannerStatusText = findViewById(R.id.plannerStatusText)
         commandStatusText = findViewById(R.id.commandStatusText)
+        assistantStatusText = findViewById(R.id.assistantStatusText)
         recordButton = findViewById(R.id.recordSampleButton)
         saveButton = findViewById(R.id.saveVoiceButton)
         testButton = findViewById(R.id.testVoiceButton)
@@ -94,6 +113,7 @@ class MainActivity : AppCompatActivity() {
         prepareCommandSpeechButton = findViewById(R.id.prepareCommandSpeechButton)
         talkToLiaButton = findViewById(R.id.talkToLiaButton)
         cancelAgentButton = findViewById(R.id.cancelAgentButton)
+        assistantRoleButton = findViewById(R.id.assistantRoleButton)
 
         recordButton.setOnClickListener { recordSample() }
         saveButton.setOnClickListener { saveProfile() }
@@ -127,6 +147,10 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
+        assistantRoleButton.setOnClickListener {
+            requestAssistantRole()
+        }
+
         findViewById<Button>(R.id.worldVisionButton).setOnClickListener {
             startActivity(Intent(this, WorldVisionActivity::class.java))
         }
@@ -142,6 +166,7 @@ class MainActivity : AppCompatActivity() {
         refreshButtons()
         refreshPlannerStatus()
         refreshCommandStatus()
+        refreshAssistantStatus()
 
         status(
             if (store.hasProfile()) {
@@ -150,6 +175,81 @@ class MainActivity : AppCompatActivity() {
                 "Registra entre 3 y 5 muestras. La primera vez Lía preparará el modelo local de voz."
             }
         )
+
+        handleAssistantLaunchIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleAssistantLaunchIntent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::assistantStatusText.isInitialized) {
+            refreshAssistantStatus()
+        }
+    }
+
+    private fun handleAssistantLaunchIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_START_VOICE_COMMAND, false) != true) {
+            return
+        }
+
+        intent.removeExtra(EXTRA_START_VOICE_COMMAND)
+        commandStatus("Lía fue activada como asistente. Preparando escucha…")
+        talkToLia()
+    }
+
+    private fun requestAssistantRole() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = getSystemService(RoleManager::class.java)
+
+            if (roleManager?.isRoleAvailable(RoleManager.ROLE_ASSISTANT) != true) {
+                assistantStatus("Android no ofrece el rol de asistente en este dispositivo.")
+                return
+            }
+
+            if (roleManager.isRoleHeld(RoleManager.ROLE_ASSISTANT)) {
+                assistantStatus("Lía ya es el asistente del sistema.")
+                return
+            }
+
+            assistantRoleRequest.launch(
+                roleManager.createRequestRoleIntent(RoleManager.ROLE_ASSISTANT)
+            )
+        } else {
+            runCatching {
+                startActivity(Intent(Settings.ACTION_VOICE_INPUT_SETTINGS))
+            }.onFailure {
+                assistantStatus("Abre los ajustes de asistencia de Android para elegir Lía.")
+            }
+        }
+    }
+
+    private fun refreshAssistantStatus() {
+        val active = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = getSystemService(RoleManager::class.java)
+            roleManager?.isRoleHeld(RoleManager.ROLE_ASSISTANT) == true
+        } else {
+            false
+        }
+
+        assistantStatus(
+            if (active) {
+                "Asistente del sistema: Lía está activa."
+            } else {
+                "Asistente del sistema: todavía no seleccionada."
+            }
+        )
+
+        assistantRoleButton.text =
+            if (active) {
+                "Lía ya es el asistente del sistema"
+            } else {
+                "Usar Lía como asistente del sistema"
+            }
     }
 
     private fun prepareCommandSpeechModel() {
@@ -191,7 +291,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun talkToLia() {
-        if (!ensureMicrophonePermission()) return
+        if (!ensureMicrophonePermission(resumeVoiceCommand = true)) return
 
         if (!store.hasProfile()) {
             commandStatus("Primero registra y guarda tu identidad de voz.")
@@ -544,11 +644,14 @@ class MainActivity : AppCompatActivity() {
         return SherpaSpeakerEngine(provisioner.modelFile).also { engine = it }
     }
 
-    private fun ensureMicrophonePermission(): Boolean {
+    private fun ensureMicrophonePermission(
+        resumeVoiceCommand: Boolean = false
+    ): Boolean {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
             PackageManager.PERMISSION_GRANTED
         ) return true
 
+        resumeVoiceCommandAfterMicPermission = resumeVoiceCommand
         microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
         return false
     }
@@ -580,6 +683,11 @@ class MainActivity : AppCompatActivity() {
         commandStatusText.announceForAccessibility(text)
     }
 
+    private fun assistantStatus(text: String) {
+        assistantStatusText.text = text
+        assistantStatusText.announceForAccessibility(text)
+    }
+
     override fun onDestroy() {
         commandTranscriber?.close()
         commandTranscriber = null
@@ -590,6 +698,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        const val EXTRA_START_VOICE_COMMAND =
+            "org.lia.accessibility.extra.START_VOICE_COMMAND"
+
         private const val COMMAND_DURATION_MS = 7_000
     }
 }
