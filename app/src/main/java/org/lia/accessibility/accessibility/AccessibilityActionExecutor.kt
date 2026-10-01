@@ -67,6 +67,7 @@ class AccessibilityActionExecutor(
                         action.text
                     )
                 }
+
                 val performed = node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
                 UiExecutionResult(
                     true,
@@ -151,11 +152,13 @@ class AccessibilityActionExecutor(
     ): Boolean {
         var current: AccessibilityNodeInfo? = start
         var hops = 0
+
         while (current != null && hops <= 5) {
             if (current.isEnabled && current.performAction(action)) return true
             current = current.parent
             hops++
         }
+
         return false
     }
 
@@ -189,6 +192,7 @@ class AccessibilityActionExecutor(
     private fun snapshot(node: AccessibilityNodeInfo, path: String): UiNodeSnapshot {
         val rect = android.graphics.Rect()
         node.getBoundsInScreen(rect)
+
         return UiNodeSnapshot(
             path = path,
             text = node.text?.toString(),
@@ -196,7 +200,7 @@ class AccessibilityActionExecutor(
             className = node.className?.toString(),
             viewId = node.viewIdResourceName,
             packageName = node.packageName?.toString(),
-            bounds = rect,
+            bounds = UiBounds(rect.left, rect.top, rect.right, rect.bottom),
             clickable = node.isClickable,
             editable = node.isEditable,
             scrollable = node.isScrollable,
