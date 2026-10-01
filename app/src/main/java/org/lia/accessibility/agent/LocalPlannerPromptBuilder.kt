@@ -14,6 +14,7 @@ object LocalPlannerPromptBuilder {
         appendLine("No inventes herramientas ni argumentos.")
         appendLine("Observa de nuevo después de cada acción y evita repetir acciones sin progreso.")
         appendLine("Las acciones sensibles pueden requerir una segunda comprobación; nunca intentes evadirla.")
+        appendLine("Un click genérico puede elevarse a sensible o irreversible por el texto del control.")
         appendLine()
         appendLine("Herramientas disponibles:")
 
@@ -54,9 +55,17 @@ object LocalPlannerPromptBuilder {
         val recentEvents = events
             .takeLast(MAX_EVENT_COUNT)
             .joinToString("\n") { event ->
-                event.step.toString() +
-                    ":" + event.type.name.lowercase() +
-                    ":" + (event.actionKey ?: event.message.take(100))
+                buildString {
+                    append(event.step)
+                    append(":")
+                    append(event.type.name.lowercase())
+                    event.actionKey?.let {
+                        append(":accion=")
+                        append(it.take(120))
+                    }
+                    append(":")
+                    append(event.message.take(320))
+                }
             }
             .ifBlank { "[sin acciones anteriores]" }
 
