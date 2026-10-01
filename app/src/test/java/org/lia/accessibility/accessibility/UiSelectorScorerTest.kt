@@ -1,6 +1,5 @@
 package org.lia.accessibility.accessibility
 
-import android.graphics.Rect
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -20,7 +19,7 @@ class UiSelectorScorerTest {
         className = "android.widget.Button",
         viewId = viewId,
         packageName = "example.app",
-        bounds = Rect(0, 0, 100, 100),
+        bounds = UiBounds(0, 0, 100, 100),
         clickable = clickable,
         editable = editable,
         scrollable = false,
@@ -50,7 +49,10 @@ class UiSelectorScorerTest {
     fun disabledNodeIsRejected() {
         assertEquals(
             Int.MIN_VALUE,
-            UiSelectorScorer.score(node(text = "Enviar", enabled = false), UiSelector(text = "Enviar"))
+            UiSelectorScorer.score(
+                node(text = "Enviar", enabled = false),
+                UiSelector(text = "Enviar")
+            )
         )
     }
 
