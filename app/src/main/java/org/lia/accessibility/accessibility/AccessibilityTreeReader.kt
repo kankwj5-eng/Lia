@@ -38,8 +38,8 @@ class AccessibilityTreeReader(
     ) {
         if (depth > maxDepth || output.size >= maxNodes) return
 
-        val bounds = Rect()
-        node.getBoundsInScreen(bounds)
+        val rect = Rect()
+        node.getBoundsInScreen(rect)
 
         output += UiNodeSnapshot(
             path = path,
@@ -48,7 +48,7 @@ class AccessibilityTreeReader(
             className = node.className?.toString(),
             viewId = node.viewIdResourceName,
             packageName = node.packageName?.toString(),
-            bounds = bounds,
+            bounds = UiBounds(rect.left, rect.top, rect.right, rect.bottom),
             clickable = node.isClickable,
             editable = node.isEditable,
             scrollable = node.isScrollable,
