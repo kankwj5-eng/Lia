@@ -53,6 +53,12 @@ if ! grep -q "LiaAccessibilityService" "$DIAG/package.txt"; then
 fi
 
 echo "== Enable Lía accessibility service in CI emulator =="
+# Android 13+ puede marcar como restringidos los ajustes de accesibilidad de
+# aplicaciones instaladas fuera de Play. En el emulador CI autorizamos esa
+# operación explícitamente antes de escribir enabled_accessibility_services.
+adb shell appops set "$PACKAGE" ACCESS_RESTRICTED_SETTINGS allow >/dev/null 2>&1 || \
+  adb shell appops set "$PACKAGE" android:access_restricted_settings allow >/dev/null 2>&1 || true
+
 adb_retry adb shell settings put secure enabled_accessibility_services "$SERVICE"
 adb_retry adb shell settings put secure accessibility_enabled 1
 
