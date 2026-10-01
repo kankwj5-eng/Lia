@@ -61,15 +61,16 @@ class StrictToolProtocolTest {
     }
 
     @Test
-    fun acceptsJsonAfterQwenThinkingWrapper() {
-        val result = StrictToolProtocol.parse(
+    fun stripsQwenThinkingWrapperBeforeProtocolParsing() {
+        val normalized = StrictToolProtocol.normalizeModelResponse(
             "<think>razonamiento interno</think>\n" +
                 "{\"tool\":\"home\",\"arguments\":{}}"
         )
 
-        assertTrue(result is ToolProtocolResult.Accepted)
-        val call = (result as ToolProtocolResult.Accepted).call
-        assertEquals("home", call.name)
+        assertEquals(
+            "{\"tool\":\"home\",\"arguments\":{}}",
+            normalized
+        )
     }
 
     @Test
