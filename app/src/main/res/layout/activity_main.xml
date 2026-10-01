@@ -57,6 +57,23 @@
             android:text="Probar mi voz" />
 
         <TextView
+            android:id="@+id/assistantStatusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:accessibilityLiveRegion="polite"
+            android:text="Asistente del sistema: comprobando…"
+            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+        <Button
+            android:id="@+id/assistantRoleButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:minHeight="56dp"
+            android:text="Usar Lía como asistente del sistema" />
+
+        <TextView
             android:id="@+id/commandStatusText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
