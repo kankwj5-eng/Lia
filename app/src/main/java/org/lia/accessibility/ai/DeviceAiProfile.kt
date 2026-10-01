@@ -47,7 +47,7 @@ object DeviceAiProfileSelector {
         val safeRam = totalRamMb.coerceAtLeast(0L)
 
         val modelClass = when {
-            lowRamDevice || safeRam in 1..5_499 -> LocalModelClass.TINY
+            lowRamDevice || safeRam < 5_500 -> LocalModelClass.TINY
             safeRam in 5_500..8_499 -> LocalModelClass.SMALL
             else -> LocalModelClass.MEDIUM
         }
