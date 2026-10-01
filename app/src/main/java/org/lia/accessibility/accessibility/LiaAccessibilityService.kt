@@ -6,6 +6,8 @@ import android.content.Intent
 import android.graphics.Path
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
+import org.lia.accessibility.agent.PhoneState
+import org.lia.accessibility.agent.PhoneStateProvider
 import org.lia.accessibility.device.DeviceEventMonitor
 import org.lia.accessibility.device.HapticFeedback
 import org.lia.accessibility.device.HapticSignal
@@ -26,6 +28,7 @@ class LiaAccessibilityService : AccessibilityService() {
     private lateinit var systemController: AndroidSystemController
     private lateinit var screenshotProvider: AccessibilityScreenshotProvider
     private lateinit var screenOcrReader: ScreenOcrReader
+    private lateinit var phoneStateProvider: PhoneStateProvider
     private var deviceEvents: DeviceEventMonitor? = null
 
     @Volatile
@@ -39,6 +42,7 @@ class LiaAccessibilityService : AccessibilityService() {
         systemController = AndroidSystemController(this)
         screenshotProvider = AccessibilityScreenshotProvider(this)
         screenOcrReader = ScreenOcrReader()
+        phoneStateProvider = PhoneStateProvider(this)
 
         deviceEvents = DeviceEventMonitor(
             context = this,
@@ -153,6 +157,9 @@ class LiaAccessibilityService : AccessibilityService() {
         androidController.verifyStateChanged(result)
 
     internal fun lastUiEventAt(): Long = lastUiEventAtEpochMs
+
+    internal fun capturePhoneState(): PhoneState =
+        phoneStateProvider.capture()
 
     internal fun goBack(): Boolean = performGlobalAction(GLOBAL_ACTION_BACK)
     internal fun goHome(): Boolean = performGlobalAction(GLOBAL_ACTION_HOME)
