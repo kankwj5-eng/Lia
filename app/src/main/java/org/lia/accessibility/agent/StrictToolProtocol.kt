@@ -50,7 +50,7 @@ object StrictToolProtocol {
             return ToolProtocolResult.Rejected("La respuesta del modelo es demasiado grande.")
         }
 
-        if (!text.startsWith('{') || !text.endsWith('}') || text.contains("\`\`\`")) {
+        if (!text.startsWith('{') || !text.endsWith('}') || text.contains(96.toChar().toString().repeat(3))) {
             return ToolProtocolResult.Rejected(
                 "El modelo debe devolver exactamente un objeto JSON, sin texto adicional."
             )
