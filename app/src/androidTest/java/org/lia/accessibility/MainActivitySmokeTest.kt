@@ -2,6 +2,7 @@ package org.lia.accessibility
 
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions.scrollTo
 import androidx.test.espresso.accessibility.AccessibilityChecks
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
@@ -33,11 +34,21 @@ class MainActivitySmokeTest {
             onView(withId(R.id.recordSampleButton)).check(matches(isDisplayed()))
             onView(withId(R.id.saveVoiceButton)).check(matches(isDisplayed()))
             onView(withId(R.id.testVoiceButton)).check(matches(isDisplayed()))
-            onView(withId(R.id.plannerStatusText)).check(matches(isDisplayed()))
-            onView(withId(R.id.importPlannerButton)).check(matches(isDisplayed()))
-            onView(withId(R.id.worldVisionButton)).check(matches(isDisplayed()))
-            onView(withId(R.id.accessibilitySettingsButton)).check(matches(isDisplayed()))
-            onView(withId(R.id.notificationSettingsButton)).check(matches(isDisplayed()))
+            onView(withId(R.id.plannerStatusText))
+                .perform(scrollTo())
+                .check(matches(isDisplayed()))
+            onView(withId(R.id.importPlannerButton))
+                .perform(scrollTo())
+                .check(matches(isDisplayed()))
+            onView(withId(R.id.worldVisionButton))
+                .perform(scrollTo())
+                .check(matches(isDisplayed()))
+            onView(withId(R.id.accessibilitySettingsButton))
+                .perform(scrollTo())
+                .check(matches(isDisplayed()))
+            onView(withId(R.id.notificationSettingsButton))
+                .perform(scrollTo())
+                .check(matches(isDisplayed()))
         }
     }
 }
