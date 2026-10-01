@@ -1,7 +1,7 @@
 package org.lia.accessibility.ai
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFailsWith
+import org.junit.Assert.fail
 import org.junit.Test
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -45,8 +45,11 @@ class PlannerModelFormatDetectorTest {
 
     @Test
     fun rejectsUnknownFormat() {
-        assertFailsWith<IllegalStateException> {
+        try {
             PlannerModelFormatDetector.detect(ByteArray(20))
+            fail("Se esperaba rechazo del formato desconocido.")
+        } catch (_: IllegalStateException) {
+            // Esperado.
         }
     }
 }
