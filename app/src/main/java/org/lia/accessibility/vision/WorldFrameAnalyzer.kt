@@ -1,6 +1,7 @@
 package org.lia.accessibility.vision
 
 import android.graphics.Color
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import com.google.android.gms.tasks.Tasks
@@ -40,6 +41,7 @@ class WorldFrameAnalyzer(
         analyzeNext.set(true)
     }
 
+    @OptIn(ExperimentalGetImage::class)
     override fun analyze(imageProxy: ImageProxy) {
         if (!analyzeNext.compareAndSet(true, false)) {
             imageProxy.close()
