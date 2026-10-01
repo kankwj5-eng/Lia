@@ -72,6 +72,14 @@
             android:minHeight="56dp"
             android:text="Activar control de Android" />
 
+        <Button
+            android:id="@+id/notificationSettingsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:minHeight="56dp"
+            android:text="Permitir lectura de notificaciones" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
