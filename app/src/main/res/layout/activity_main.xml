@@ -121,7 +121,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:minHeight="56dp"
-            android:text="Importar cerebro local (.litertlm)" />
+            android:text="Importar mi modelo local" />
 
         <Button
             android:id="@+id/worldVisionButton"
@@ -152,7 +152,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:paddingBottom="32dp"
-            android:text="La identidad de voz se procesa localmente. Lía guarda embeddings cifrados, no las grabaciones."
+            android:text="La identidad de voz y el cerebro de Lía se procesan localmente. Puedes importar un modelo GGUF o LiteRT-LM que ya tengas descargado; no necesita una API para razonar."
             android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
     </LinearLayout>
 </ScrollView>
