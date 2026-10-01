@@ -3,13 +3,17 @@ package org.lia.accessibility
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.database.Cursor
+import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.provider.Settings
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import org.lia.accessibility.ai.PlannerModelStore
 import org.lia.accessibility.vision.WorldVisionActivity
 import org.lia.accessibility.voice.OwnerVoiceAuthenticator
 import org.lia.accessibility.voice.SherpaSpeakerEngine
@@ -21,9 +25,11 @@ import kotlin.math.roundToInt
 
 class MainActivity : AppCompatActivity() {
     private lateinit var statusText: TextView
+    private lateinit var plannerStatusText: TextView
     private lateinit var recordButton: Button
     private lateinit var saveButton: Button
     private lateinit var testButton: Button
+    private lateinit var importPlannerButton: Button
 
     private val worker = Executors.newSingleThreadExecutor()
     private lateinit var recorder: VoiceSampleRecorder
@@ -31,6 +37,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var provisioner: VoiceModelProvisioner
     private lateinit var store: VoiceProfileStore
+    private lateinit var plannerModelStore: PlannerModelStore
     private var engine: SherpaSpeakerEngine? = null
 
     private val phrases = listOf(
@@ -47,21 +54,41 @@ class MainActivity : AppCompatActivity() {
             else status("Lía necesita acceso al micrófono para registrar tu identidad de voz.")
         }
 
+    private val plannerModelPicker =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) {
+                importPlannerModel(uri)
+            }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         provisioner = VoiceModelProvisioner(this)
         store = VoiceProfileStore(this)
+        recorder = VoiceSampleRecorder(this)
+        plannerModelStore = PlannerModelStore(this)
 
         statusText = findViewById(R.id.statusText)
+        plannerStatusText = findViewById(R.id.plannerStatusText)
         recordButton = findViewById(R.id.recordSampleButton)
         saveButton = findViewById(R.id.saveVoiceButton)
         testButton = findViewById(R.id.testVoiceButton)
+        importPlannerButton = findViewById(R.id.importPlannerButton)
 
         recordButton.setOnClickListener { recordSample() }
         saveButton.setOnClickListener { saveProfile() }
         testButton.setOnClickListener { testVoice() }
+        importPlannerButton.setOnClickListener {
+            plannerModelPicker.launch(
+                arrayOf(
+                    "application/octet-stream",
+                    "application/zip",
+                    "*/*"
+                )
+            )
+        }
 
         findViewById<Button>(R.id.worldVisionButton).setOnClickListener {
             startActivity(Intent(this, WorldVisionActivity::class.java))
@@ -76,12 +103,97 @@ class MainActivity : AppCompatActivity() {
         }
 
         refreshButtons()
+        refreshPlannerStatus()
+
         status(
             if (store.hasProfile()) {
                 "Tu identidad de voz ya está registrada. Puedes probarla o continuar configurando Lía."
             } else {
                 "Registra entre 3 y 5 muestras. La primera vez Lía preparará el modelo local de voz."
             }
+        )
+    }
+
+    private fun importPlannerModel(uri: Uri) {
+        importPlannerButton.isEnabled = false
+        plannerStatus("Verificando e instalando el modelo local de Lía…")
+
+        worker.execute {
+            val result = runCatching {
+                val sourceName = displayName(uri) ?: "planner.litertlm"
+                contentResolver.openInputStream(uri).use { input ->
+                    requireNotNull(input) {
+                        "Android no permitió abrir el archivo seleccionado."
+                    }
+                    plannerModelStore.install(
+                        sourceName = sourceName,
+                        input = input
+                    )
+                }
+            }
+
+            runOnUiThread {
+                result.onSuccess { info ->
+                    val megabytes = info.sizeBytes / (1024L * 1024L)
+                    plannerStatus(
+                        "Modelo local instalado: " +
+                            megabytes +
+                            " MB. SHA-256: " +
+                            info.sha256.take(12) +
+                            "…"
+                    )
+                }.onFailure { error ->
+                    plannerStatus(
+                        "No pude instalar el modelo local: " +
+                            (error.message ?: "error desconocido")
+                    )
+                }
+
+                importPlannerButton.isEnabled = true
+            }
+        }
+    }
+
+    private fun displayName(uri: Uri): String? {
+        var cursor: Cursor? = null
+
+        return try {
+            cursor = contentResolver.query(
+                uri,
+                arrayOf(OpenableColumns.DISPLAY_NAME),
+                null,
+                null,
+                null
+            )
+
+            if (cursor?.moveToFirst() == true) {
+                val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (index >= 0) cursor.getString(index) else null
+            } else {
+                null
+            }
+        } finally {
+            cursor?.close()
+        }
+    }
+
+    private fun refreshPlannerStatus() {
+        val model = plannerModelStore.installedModel()
+
+        if (model == null) {
+            plannerStatus(
+                "Cerebro local: no instalado. Puedes importar un archivo .litertlm."
+            )
+            return
+        }
+
+        val megabytes = model.sizeBytes / (1024L * 1024L)
+        plannerStatus(
+            "Cerebro local listo: " +
+                megabytes +
+                " MB · " +
+                model.sha256.take(12) +
+                "…"
         )
     }
 
@@ -250,6 +362,11 @@ class MainActivity : AppCompatActivity() {
     private fun status(text: String) {
         statusText.text = text
         statusText.announceForAccessibility(text)
+    }
+
+    private fun plannerStatus(text: String) {
+        plannerStatusText.text = text
+        plannerStatusText.announceForAccessibility(text)
     }
 
     override fun onDestroy() {
