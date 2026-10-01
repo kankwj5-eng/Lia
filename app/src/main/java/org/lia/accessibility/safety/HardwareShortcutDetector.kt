@@ -13,16 +13,19 @@ class HardwareShortcutDetector(
 ) {
     private val volumeDownTimes = ArrayDeque<Long>()
 
-    fun onKeyEvent(event: KeyEvent): HardwareShortcut? {
-        if (event.action != KeyEvent.ACTION_DOWN || event.repeatCount != 0) return null
+    fun onKeyEvent(event: KeyEvent): HardwareShortcut? =
+        onKey(event.keyCode, event.action, event.repeatCount)
 
-        if (event.keyCode == KeyEvent.KEYCODE_HEADSETHOOK ||
-            event.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
+    fun onKey(keyCode: Int, action: Int, repeatCount: Int = 0): HardwareShortcut? {
+        if (action != KeyEvent.ACTION_DOWN || repeatCount != 0) return null
+
+        if (keyCode == KeyEvent.KEYCODE_HEADSETHOOK ||
+            keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
         ) {
             return HardwareShortcut.ACTIVATE_LIA
         }
 
-        if (event.keyCode != KeyEvent.KEYCODE_VOLUME_DOWN) return null
+        if (keyCode != KeyEvent.KEYCODE_VOLUME_DOWN) return null
 
         val current = now()
         volumeDownTimes.addLast(current)
