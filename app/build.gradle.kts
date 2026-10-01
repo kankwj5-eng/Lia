@@ -42,6 +42,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.activity:activity-ktx:1.11.0")
     implementation("com.google.android.material:material:1.13.0")
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.17.1")
 
     implementation("com.github.k2-fsa.sherpa-onnx:sherpa-onnx:v1.13.8")
 
