@@ -11,6 +11,5 @@
         <item name="android:navigationBarColor">@color/lia_bg_deep</item>
         <item name="android:statusBarColor">@color/lia_bg</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
     </style>
 </resources>
