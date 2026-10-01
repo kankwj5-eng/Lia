@@ -1,16 +1,24 @@
 package org.lia.accessibility.voice
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import androidx.core.content.ContextCompat
 
-class VoiceSampleRecorder {
+class VoiceSampleRecorder(
+    private val context: Context
+) {
     companion object {
         const val SAMPLE_RATE = 16_000
         const val DEFAULT_DURATION_MS = 4_000
     }
 
     fun record(durationMs: Int = DEFAULT_DURATION_MS): FloatArray {
+        checkMicrophonePermission()
+
         val targetSamples = SAMPLE_RATE * durationMs / 1000
         val minBuffer = AudioRecord.getMinBufferSize(
             SAMPLE_RATE,
@@ -38,20 +46,53 @@ class VoiceSampleRecorder {
         val output = FloatArray(targetSamples)
         val scratch = ShortArray(1024)
         var written = 0
+
         try {
             recorder.startRecording()
+
             while (written < targetSamples) {
                 val wanted = minOf(scratch.size, targetSamples - written)
-                val count = recorder.read(scratch, 0, wanted, AudioRecord.READ_BLOCKING)
-                if (count < 0) error("Error de captura de audio: $count")
-                for (i in 0 until count) output[written + i] = scratch[i] / 32768.0f
+                val count = recorder.read(
+                    scratch,
+                    0,
+                    wanted,
+                    AudioRecord.READ_BLOCKING
+                )
+
+                if (count < 0) {
+                    error("Error de captura de audio: " + count)
+                }
+
+                for (i in 0 until count) {
+                    output[written + i] = scratch[i] / 32768.0f
+                }
+
                 written += count
             }
         } finally {
-            if (recorder.recordingState == AudioRecord.RECORDSTATE_RECORDING) recorder.stop()
+            if (recorder.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                recorder.stop()
+            }
             recorder.release()
             scratch.fill(0)
         }
-        return if (written == output.size) output else output.copyOf(written)
+
+        return if (written == output.size) {
+            output
+        } else {
+            output.copyOf(written)
+        }
+    }
+
+    private fun checkMicrophonePermission() {
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.RECORD_AUDIO
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            throw SecurityException(
+                "Lía no puede usar el micrófono sin permiso de grabación de audio."
+            )
+        }
     }
 }
