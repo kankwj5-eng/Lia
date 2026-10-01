@@ -197,7 +197,7 @@ object StrictToolProtocol {
         return ToolProtocolResult.Accepted(call)
     }
 
-    private fun normalizeModelResponse(raw: String): String {
+    internal fun normalizeModelResponse(raw: String): String {
         var text = raw.trim()
 
         // Algunos modelos de razonamiento (por ejemplo ciertas variantes de
