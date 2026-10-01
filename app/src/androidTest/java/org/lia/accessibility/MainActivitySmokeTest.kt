@@ -35,6 +35,7 @@ class MainActivitySmokeTest {
             onView(withId(R.id.testVoiceButton)).check(matches(isDisplayed()))
             onView(withId(R.id.worldVisionButton)).check(matches(isDisplayed()))
             onView(withId(R.id.accessibilitySettingsButton)).check(matches(isDisplayed()))
+            onView(withId(R.id.notificationSettingsButton)).check(matches(isDisplayed()))
         }
     }
 }
