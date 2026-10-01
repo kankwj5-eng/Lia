@@ -56,6 +56,23 @@
             android:minHeight="56dp"
             android:text="Probar mi voz" />
 
+        <TextView
+            android:id="@+id/plannerStatusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:accessibilityLiveRegion="polite"
+            android:text="Cerebro local: comprobando…"
+            android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+
+        <Button
+            android:id="@+id/importPlannerButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:minHeight="56dp"
+            android:text="Importar cerebro local (.litertlm)" />
+
         <Button
             android:id="@+id/worldVisionButton"
             android:layout_width="match_parent"
