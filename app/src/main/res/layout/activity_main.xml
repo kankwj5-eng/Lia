@@ -57,10 +57,18 @@
             android:text="Probar mi voz" />
 
         <Button
-            android:id="@+id/accessibilitySettingsButton"
+            android:id="@+id/worldVisionButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="28dp"
+            android:minHeight="56dp"
+            android:text="Usar cámara para ver el entorno" />
+
+        <Button
+            android:id="@+id/accessibilitySettingsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
             android:minHeight="56dp"
             android:text="Activar control de Android" />
 
@@ -69,7 +77,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:paddingBottom="32dp"
-            android:text="La voz se procesa localmente. Lía guarda una representación biométrica cifrada, no la grabación."
+            android:text="La identidad de voz se procesa localmente. Lía guarda embeddings cifrados, no las grabaciones."
             android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
     </LinearLayout>
 </ScrollView>
