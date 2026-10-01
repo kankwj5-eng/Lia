@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var testButton: Button
 
     private val worker = Executors.newSingleThreadExecutor()
-    private val recorder = VoiceSampleRecorder()
+    private lateinit var recorder: VoiceSampleRecorder
     private val samples = mutableListOf<FloatArray>()
 
     private lateinit var provisioner: VoiceModelProvisioner
