@@ -1,5 +1,7 @@
 package org.lia.accessibility.agent
 
+import org.lia.accessibility.agent.tools.*
+
 import org.lia.accessibility.agent.orchestration.LiaAgentRole
 import org.lia.accessibility.agent.orchestration.LiaAgentRoleSelector
 
