@@ -78,7 +78,12 @@ class LiaVoiceInteractionService : VoiceInteractionService() {
             onCommand = ::handleWakeCommand,
             onWakeOnly = {
                 LiaAccessibilityBridge.signalListening()
-                launchLia()
+                emitAttentionStatus(
+                    AttentionStatus(
+                        state = AttentionState.LISTENING,
+                        message = "Te escucho. Di la orden."
+                    )
+                )
             },
             onStatus = ::emitAttentionStatus
         ).also { controller ->
