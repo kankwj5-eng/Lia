@@ -22,12 +22,14 @@ class LocalModelPlanner(
     suspend fun plan(
         goal: String,
         profile: LiaAgentProfile,
+        conversationContext: String,
         state: PhoneState,
         screen: ScreenSnapshot,
         events: List<AgentEvent>
     ): LocalPlannerDecision {
         val userTurn = LocalPlannerPromptBuilder.buildTurn(
             goal = goal,
+            conversationContext = conversationContext,
             state = state,
             screen = screen,
             events = events
