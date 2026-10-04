@@ -5,10 +5,10 @@ import org.junit.Test
 
 class LiaAgentRoleSelectorTest {
     @Test
-    fun routesCommonGoalsToSpecialists() {
+    fun routesFocusedGoalsToSpecialistsAndMixedGoalsToGeneral() {
         assertEquals(
             LiaAgentRole.COMMUNICATION,
-            LiaAgentRoleSelector.select("Abre WhatsApp y manda un mensaje")
+            LiaAgentRoleSelector.select("Manda un mensaje por WhatsApp")
         )
         assertEquals(
             LiaAgentRole.VISION,
@@ -21,6 +21,10 @@ class LiaAgentRoleSelectorTest {
         assertEquals(
             LiaAgentRole.NAVIGATION,
             LiaAgentRoleSelector.select("Abre Ajustes y busca batería")
+        )
+        assertEquals(
+            LiaAgentRole.GENERAL,
+            LiaAgentRoleSelector.select("Abre WhatsApp y después enciende la linterna")
         )
         assertEquals(
             LiaAgentRole.GENERAL,
