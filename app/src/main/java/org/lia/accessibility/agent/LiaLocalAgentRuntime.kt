@@ -6,10 +6,9 @@ import org.lia.accessibility.accessibility.LiaAccessibilityService
 import org.lia.accessibility.accessibility.ScreenObservationResult
 import org.lia.accessibility.accessibility.ScreenSnapshot
 import org.lia.accessibility.ai.LocalLanguageModel
-import org.lia.accessibility.agent.orchestration.LiaAgentProfiles
-import org.lia.accessibility.agent.orchestration.LiaAgentRoleSelector
 import org.lia.accessibility.agent.planning.LocalModelPlanner
 import org.lia.accessibility.agent.planning.LocalPlannerDecision
+import org.lia.accessibility.agent.orchestration.LiaAgentProfile
 import org.lia.accessibility.location.LocationContextProvider
 import org.lia.accessibility.security.ActionRisk
 import org.lia.accessibility.vision.WorldVisionActivity
@@ -60,6 +59,7 @@ class LiaLocalAgentRuntime(
     private val service: LiaAccessibilityService,
     model: LocalLanguageModel,
     private val voice: VoiceVerification,
+    private val profile: LiaAgentProfile,
     private val config: LocalAgentConfig = LocalAgentConfig()
 ) {
     private val planner = LocalModelPlanner(model)
@@ -95,8 +95,7 @@ class LiaLocalAgentRuntime(
         cancelled = false
         recentActionKeys.clear()
 
-        val role = LiaAgentRoleSelector.select(goal)
-        val profile = LiaAgentProfiles.forRole(role)
+        val role = profile.role
         val maxSteps = minOf(config.maxSteps, profile.maxSteps)
         val maxRecoveries = minOf(config.maxRecoveries, profile.maxRecoveries)
         val events = mutableListOf<AgentEvent>()
