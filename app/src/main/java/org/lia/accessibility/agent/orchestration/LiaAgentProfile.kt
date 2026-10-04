@@ -1,7 +1,5 @@
 package org.lia.accessibility.agent.orchestration
 
-import org.lia.accessibility.agent.LiaAgentRole
-
 /**
  * Contrato de capacidades de un especialista.
  *
