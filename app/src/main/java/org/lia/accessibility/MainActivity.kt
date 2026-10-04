@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var plannerStatusText: TextView
     private lateinit var commandStatusText: TextView
     private lateinit var assistantStatusText: TextView
+    private lateinit var activeAgentText: TextView
     private lateinit var chatHistoryText: TextView
     private lateinit var chatInput: EditText
     private lateinit var recordButton: Button
@@ -131,6 +132,7 @@ class MainActivity : AppCompatActivity() {
         plannerStatusText = findViewById(R.id.plannerStatusText)
         commandStatusText = findViewById(R.id.commandStatusText)
         assistantStatusText = findViewById(R.id.assistantStatusText)
+        activeAgentText = findViewById(R.id.activeAgentText)
         chatHistoryText = findViewById(R.id.chatHistoryText)
         chatInput = findViewById(R.id.chatInput)
         recordButton = findViewById(R.id.recordSampleButton)
@@ -444,7 +446,13 @@ class MainActivity : AppCompatActivity() {
             if (intent?.action != LiaAccessibilityService.ACTION_AGENT_STATE) return
             val status = intent.getStringExtra(LiaAccessibilityService.EXTRA_AGENT_STATUS).orEmpty()
             val message = intent.getStringExtra(LiaAccessibilityService.EXTRA_MESSAGE).orEmpty()
-            if (message.isNotBlank()) {
+            val agentRole = intent.getStringExtra(LiaAccessibilityService.EXTRA_AGENT_ROLE).orEmpty()
+
+            if (status == "agent_selected" && agentRole.isNotBlank()) {
+                activeAgentText.text = "Agente activo · " + agentRole
+            }
+
+            if (message.isNotBlank() && status != "agent_selected") {
                 appendChatLine(
                     when (status) {
                         "completed" -> "Lía"
