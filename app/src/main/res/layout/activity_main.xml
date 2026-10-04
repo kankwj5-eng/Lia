@@ -184,7 +184,7 @@
                     android:id="@+id/cancelAgentButton"
                     style="@style/Widget.Material3.Button.TextButton"
                     android:layout_width="match_parent"
-                    android:layout_height="44dp"
+                    android:layout_height="48dp"
                     android:text="Detener tarea"
                     android:textAllCaps="false" />
             </LinearLayout>
