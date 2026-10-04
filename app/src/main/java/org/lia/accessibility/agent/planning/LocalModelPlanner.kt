@@ -2,11 +2,11 @@ package org.lia.accessibility.agent.planning
 
 import org.lia.accessibility.accessibility.ScreenSnapshot
 import org.lia.accessibility.agent.AgentEvent
-import org.lia.accessibility.agent.LiaToolCall
 import org.lia.accessibility.agent.PhoneState
-import org.lia.accessibility.agent.StrictToolProtocol
-import org.lia.accessibility.agent.ToolProtocolResult
-import org.lia.accessibility.agent.ToolValue
+import org.lia.accessibility.agent.tools.LiaToolCall
+import org.lia.accessibility.agent.tools.StrictToolProtocol
+import org.lia.accessibility.agent.tools.ToolProtocolResult
+import org.lia.accessibility.agent.tools.ToolValue
 import org.lia.accessibility.ai.AgentTurn
 import org.lia.accessibility.ai.LocalLanguageModel
 import org.lia.accessibility.agent.orchestration.LiaAgentProfile
