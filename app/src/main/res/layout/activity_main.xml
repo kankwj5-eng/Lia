@@ -490,6 +490,25 @@
                     app:iconGravity="textStart" />
 
                 <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/alwaysListeningSwitch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:minHeight="52dp"
+                    android:text="Siempre atenta a “Lía”"
+                    android:textColor="@color/lia_text" />
+
+                <TextView
+                    android:id="@+id/attentionStatusText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:accessibilityLiveRegion="polite"
+                    android:text="Activa este modo para usar Lía sin tocar la pantalla."
+                    android:textColor="@color/lia_text_secondary"
+                    android:textSize="13sp" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/voiceProtectionSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
