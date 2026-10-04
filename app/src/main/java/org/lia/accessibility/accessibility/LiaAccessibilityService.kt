@@ -22,6 +22,8 @@ import org.lia.accessibility.agent.LiaAgentCoordinator
 import org.lia.accessibility.agent.LocalAgentOutcome
 import org.lia.accessibility.agent.PhoneState
 import org.lia.accessibility.agent.PhoneStateProvider
+import org.lia.accessibility.conversation.ConversationSpeaker
+import org.lia.accessibility.conversation.ConversationStore
 import org.lia.accessibility.device.DeviceEventMonitor
 import org.lia.accessibility.device.HapticFeedback
 import org.lia.accessibility.device.HapticSignal
@@ -44,6 +46,7 @@ class LiaAccessibilityService : AccessibilityService() {
     private lateinit var screenOcrReader: ScreenOcrReader
     private lateinit var phoneStateProvider: PhoneStateProvider
     private lateinit var agentCoordinator: LiaAgentCoordinator
+    private lateinit var conversationStore: ConversationStore
     private var deviceEvents: DeviceEventMonitor? = null
     private var bubbleView: View? = null
     private var bubbleWindowManager: WindowManager? = null
@@ -63,6 +66,7 @@ class LiaAccessibilityService : AccessibilityService() {
         screenOcrReader = ScreenOcrReader()
         phoneStateProvider = PhoneStateProvider(this)
         agentCoordinator = LiaAgentCoordinator(this)
+        conversationStore = ConversationStore(this)
         setFloatingBubbleEnabled(LiaPreferences(this).bubbleEnabled)
 
         deviceEvents = DeviceEventMonitor(
@@ -194,9 +198,17 @@ class LiaAccessibilityService : AccessibilityService() {
             return
         }
 
-        agentCoordinator.start(goal, voice) { outcome ->
+        conversationStore.add(ConversationSpeaker.USER, goal)
+        val conversationContext = conversationStore.contextForAgent(goal)
+
+        agentCoordinator.start(
+            goal = goal,
+            voice = voice,
+            conversationContext = conversationContext
+        ) { outcome ->
             when (outcome) {
                 is LocalAgentOutcome.Completed -> {
+                    conversationStore.add(ConversationSpeaker.LIA, outcome.result)
                     performSystemCommand(
                         voice = voice,
                         command = SystemCommand.Speak(outcome.result)
@@ -208,6 +220,7 @@ class LiaAccessibilityService : AccessibilityService() {
                 }
 
                 is LocalAgentOutcome.NeedsAuthorization -> {
+                    conversationStore.add(ConversationSpeaker.LIA, outcome.reason)
                     performSystemCommand(
                         voice = voice,
                         command = SystemCommand.Speak(outcome.reason)
