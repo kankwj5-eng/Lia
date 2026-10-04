@@ -94,7 +94,7 @@ class VoiceProfileStore(context: Context) {
             val createdAt = input.readLong()
             val threshold = input.readFloat()
             val count = input.readInt()
-            require(count in OwnerVoiceAuthenticator.MIN_SAMPLES..OwnerVoiceAuthenticator.MAX_SAMPLES)
+            require(count in OwnerVoiceAuthenticator.MIN_SAMPLES..LEGACY_MAX_SAMPLES)
             val embeddings = ArrayList<FloatArray>(count)
             repeat(count) {
                 val dim = input.readInt()
@@ -126,6 +126,7 @@ class VoiceProfileStore(context: Context) {
         private const val KEY_PROFILE = "owner_profile"
         private const val KEY_ALIAS = "lia_owner_voice_key_v1"
         private const val FORMAT_VERSION = 1
+        private const val LEGACY_MAX_SAMPLES = 5
         private const val TRANSFORMATION = "AES/GCM/NoPadding"
         private val AAD = "lia-owner-voice-v1".encodeToByteArray()
     }
