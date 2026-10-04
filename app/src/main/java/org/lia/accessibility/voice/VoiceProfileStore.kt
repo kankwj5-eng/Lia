@@ -26,7 +26,7 @@ class VoiceProfileStore(context: Context) {
     fun hasProfile(): Boolean = prefs.contains(KEY_PROFILE)
 
     fun save(profile: VoiceProfile) {
-        require(profile.embeddings.size in 3..5)
+        require(profile.embeddings.size in OwnerVoiceAuthenticator.MIN_SAMPLES..OwnerVoiceAuthenticator.MAX_SAMPLES)
         val clear = serialize(profile)
         try {
             val cipher = Cipher.getInstance(TRANSFORMATION)
@@ -94,7 +94,7 @@ class VoiceProfileStore(context: Context) {
             val createdAt = input.readLong()
             val threshold = input.readFloat()
             val count = input.readInt()
-            require(count in 3..5)
+            require(count in OwnerVoiceAuthenticator.MIN_SAMPLES..OwnerVoiceAuthenticator.MAX_SAMPLES)
             val embeddings = ArrayList<FloatArray>(count)
             repeat(count) {
                 val dim = input.readInt()
