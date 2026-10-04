@@ -67,6 +67,7 @@ Consulta:
 
 - docs/ARCHITECTURE.md
 - docs/AGENT_SYSTEM.md
+- docs/VOICE_FIRST.md
 - docs/VOICE_IDENTITY.md
 - docs/REAL_WORLD.md
 
