@@ -77,6 +77,7 @@ class LiaVoiceInteractionService : VoiceInteractionService() {
             context = this,
             onCommand = ::handleWakeCommand,
             onWakeOnly = {
+                LiaAccessibilityBridge.signalListening()
                 launchLia()
             },
             onStatus = ::emitAttentionStatus
@@ -89,6 +90,8 @@ class LiaVoiceInteractionService : VoiceInteractionService() {
         command: String,
         verification: VoiceVerification
     ) {
+        LiaAccessibilityBridge.signalListening()
+
         when (
             val result = LiaAccessibilityBridge.startGoal(
                 goal = command,
