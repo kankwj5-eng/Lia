@@ -124,7 +124,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="22+ herramientas"
+                        android:text="27 herramientas"
                         android:textColor="@color/lia_accent"
                         android:textSize="12sp"
                         android:textStyle="bold" />
