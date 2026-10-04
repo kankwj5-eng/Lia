@@ -1,10 +1,8 @@
 package org.lia.accessibility
 
 import android.Manifest
-import android.app.NotificationManager
 import android.app.role.RoleManager
 import android.content.BroadcastReceiver
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -28,7 +26,9 @@ import org.lia.accessibility.accessibility.AccessibilityBridgeResult
 import org.lia.accessibility.accessibility.LiaAccessibilityBridge
 import org.lia.accessibility.accessibility.LiaAccessibilityService
 import org.lia.accessibility.ai.PlannerModelStore
-import org.lia.accessibility.notifications.LiaNotificationListenerService
+import org.lia.accessibility.conversation.ConversationSpeaker
+import org.lia.accessibility.conversation.ConversationStore
+import org.lia.accessibility.permissions.AndroidPermissionNavigator
 import org.lia.accessibility.vision.WorldVisionActivity
 import org.lia.accessibility.voice.OwnerVoiceAuthenticator
 import org.lia.accessibility.voice.SherpaSpeakerEngine
@@ -64,6 +64,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bubbleSwitch: SwitchMaterial
     private lateinit var voiceControlsGroup: View
     private lateinit var preferences: LiaPreferences
+    private lateinit var permissionNavigator: AndroidPermissionNavigator
+    private lateinit var conversationStore: ConversationStore
 
     private val worker = Executors.newSingleThreadExecutor()
     private lateinit var recorder: VoiceSampleRecorder
@@ -117,6 +119,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         preferences = LiaPreferences(this)
+        permissionNavigator = AndroidPermissionNavigator(this)
+        conversationStore = ConversationStore(this)
         provisioner = VoiceModelProvisioner(this)
         store = VoiceProfileStore(this)
         recorder = VoiceSampleRecorder(this)
@@ -141,6 +145,7 @@ class MainActivity : AppCompatActivity() {
         voiceProtectionSwitch = findViewById(R.id.voiceProtectionSwitch)
         bubbleSwitch = findViewById(R.id.bubbleSwitch)
         voiceControlsGroup = findViewById(R.id.voiceControlsGroup)
+        renderConversationHistory()
 
         voiceProtectionSwitch.isChecked = preferences.voiceProtectionEnabled
         bubbleSwitch.isChecked = preferences.bubbleEnabled
@@ -286,7 +291,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openAccessibilitySetup() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        if (!permissionNavigator.requiresRestrictedSettingsGuidance()) {
             openAccessibilitySettings()
             return
         }
@@ -313,19 +318,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openAppDetails() {
-        val intent = Intent(
-            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-            Uri.parse("package:$packageName")
-        )
-        runCatching { startActivity(intent) }
-            .onFailure { startActivity(Intent(Settings.ACTION_SETTINGS)) }
+        runCatching {
+            startActivity(permissionNavigator.appDetailsIntent())
+        }.onFailure {
+            startActivity(permissionNavigator.generalSettingsIntent())
+        }
     }
 
     private fun openAccessibilitySettings() {
         runCatching {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            startActivity(permissionNavigator.accessibilitySettingsIntent())
         }.onFailure {
-            startActivity(Intent(Settings.ACTION_SETTINGS))
+            startActivity(permissionNavigator.generalSettingsIntent())
         }
     }
 
@@ -336,7 +340,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        if (!permissionNavigator.requiresRestrictedSettingsGuidance()) {
             openNotificationSettings()
             return
         }
@@ -361,30 +365,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun openNotificationSettings() {
         runCatching {
-            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            startActivity(permissionNavigator.notificationSettingsIntent())
         }.onFailure {
-            startActivity(Intent(Settings.ACTION_SETTINGS))
+            startActivity(permissionNavigator.generalSettingsIntent())
         }
     }
 
-    private fun isNotificationAccessGranted(): Boolean {
-        val component = ComponentName(this, LiaNotificationListenerService::class.java)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            val manager = getSystemService(NotificationManager::class.java) ?: return false
-            return manager.isNotificationListenerAccessGranted(component)
-        }
-
-        val enabled = Settings.Secure.getString(
-            contentResolver,
-            "enabled_notification_listeners"
-        ).orEmpty()
-
-        return enabled
-            .split(':')
-            .mapNotNull(ComponentName::unflattenFromString)
-            .any { it == component }
-    }
+    private fun isNotificationAccessGranted(): Boolean =
+        permissionNavigator.isNotificationAccessGranted()
 
     private fun refreshPermissionStatus() {
         if (!::assistantStatusText.isInitialized) return
@@ -412,7 +400,6 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        appendChatLine("Tú", goal)
         chatInput.setText("")
         startTranscriptGoal(
             transcript = goal,
@@ -423,6 +410,22 @@ class MainActivity : AppCompatActivity() {
                 message = "Orden escrita directamente dentro de Lía."
             )
         )
+    }
+
+    private fun renderConversationHistory() {
+        if (!::chatHistoryText.isInitialized) return
+
+        val messages = conversationStore.recent(16)
+        if (messages.isEmpty()) return
+
+        chatHistoryText.text = messages.joinToString("\n\n") { message ->
+            val author = when (message.speaker) {
+                ConversationSpeaker.USER -> "Tú"
+                ConversationSpeaker.LIA -> "Lía"
+                ConversationSpeaker.SYSTEM -> "Sistema"
+            }
+            author + "\n" + message.text
+        }.takeLast(6_000)
     }
 
     private fun appendChatLine(author: String, message: String) {
@@ -720,6 +723,7 @@ class MainActivity : AppCompatActivity() {
         transcript: String,
         verification: VoiceVerification
     ) {
+        appendChatLine("Tú", transcript)
         commandStatus("Entendí: “$transcript”. Pensando…")
 
         when (
