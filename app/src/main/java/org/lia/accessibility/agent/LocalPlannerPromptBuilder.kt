@@ -3,12 +3,10 @@ package org.lia.accessibility.agent
 import org.lia.accessibility.accessibility.ScreenSnapshot
 import org.lia.accessibility.agent.orchestration.LiaAgentProfile
 import org.lia.accessibility.agent.orchestration.LiaAgentProfiles
+import org.lia.accessibility.agent.context.AgentContextPolicy
+import org.lia.accessibility.agent.context.DefaultAgentContextPolicy
 
 object LocalPlannerPromptBuilder {
-    private const val MAX_SCREEN_CHARS = 6_000
-    private const val MAX_CONVERSATION_CHARS = 3_000
-    private const val MAX_EVENT_COUNT = 8
-
     fun buildSystemPrompt(
         profile: LiaAgentProfile = LiaAgentProfiles.forRole(LiaAgentRole.GENERAL)
     ): String = buildString {
@@ -56,14 +54,15 @@ object LocalPlannerPromptBuilder {
         conversationContext: String,
         state: PhoneState,
         screen: ScreenSnapshot,
-        events: List<AgentEvent>
+        events: List<AgentEvent>,
+        policy: AgentContextPolicy = DefaultAgentContextPolicy.value
     ): String {
         val screenText = screen.compactDescription()
-            .take(MAX_SCREEN_CHARS)
+            .take(policy.maxScreenChars)
             .ifBlank { "[sin texto accesible]" }
 
         val recentEvents = events
-            .takeLast(MAX_EVENT_COUNT)
+            .takeLast(policy.maxRecentEvents)
             .joinToString("\n") { event ->
                 buildString {
                     append(event.step)
@@ -71,21 +70,21 @@ object LocalPlannerPromptBuilder {
                     append(event.type.name.lowercase())
                     event.actionKey?.let {
                         append(":accion=")
-                        append(it.take(120))
+                        append(it.take(policy.maxActionKeyChars))
                     }
                     append(":")
-                    append(event.message.take(320))
+                    append(event.message.take(policy.maxEventMessageChars))
                 }
             }
             .ifBlank { "[sin acciones anteriores]" }
 
         return buildString {
             appendLine("OBJETIVO:")
-            appendLine(goal.take(2_000))
+            appendLine(goal.take(policy.maxGoalChars))
             appendLine()
             if (conversationContext.isNotBlank()) {
                 appendLine("CONVERSACIÓN RECIENTE:")
-                appendLine(conversationContext.takeLast(MAX_CONVERSATION_CHARS))
+                appendLine(conversationContext.takeLast(policy.maxConversationChars))
                 appendLine()
             }
             appendLine("ESTADO DEL TELÉFONO:")
