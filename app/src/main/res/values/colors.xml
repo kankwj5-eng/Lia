@@ -1,14 +1,18 @@
 <resources>
-    <color name="lia_bg">#0C0912</color>
-    <color name="lia_bg_deep">#08070D</color>
-    <color name="lia_surface">#17131F</color>
-    <color name="lia_surface_high">#211A2D</color>
-    <color name="lia_primary">#C9B5FF</color>
-    <color name="lia_primary_strong">#A885FF</color>
-    <color name="lia_on_primary">#24173D</color>
-    <color name="lia_text">#F5F0FA</color>
-    <color name="lia_text_secondary">#BDB4C8</color>
-    <color name="lia_outline">#3A3048</color>
-    <color name="lia_success">#8DE5B1</color>
-    <color name="lia_warning">#FFD18A</color>
+    <color name="lia_bg">#101322</color>
+    <color name="lia_bg_deep">#090C17</color>
+    <color name="lia_surface">#191D30</color>
+    <color name="lia_surface_glass">#CC20263C</color>
+    <color name="lia_surface_high">#252B43</color>
+    <color name="lia_primary">#D6C7FF</color>
+    <color name="lia_primary_strong">#A98BFF</color>
+    <color name="lia_on_primary">#1E1535</color>
+    <color name="lia_accent">#72E7D1</color>
+    <color name="lia_text">#F8F7FF</color>
+    <color name="lia_text_secondary">#BFC5D8</color>
+    <color name="lia_outline">#414963</color>
+    <color name="lia_outline_soft">#334059</color>
+    <color name="lia_success">#85E8B8</color>
+    <color name="lia_success_surface">#17382F</color>
+    <color name="lia_warning">#FFD58F</color>
 </resources>
