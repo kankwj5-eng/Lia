@@ -38,6 +38,7 @@ class LiaAgentCoordinator(
         goal: String,
         voice: VoiceVerification,
         conversationContext: String = "",
+        onAgentSelected: (LiaAgentRole) -> Unit = {},
         callback: (LocalAgentOutcome) -> Unit
     ) {
         val runGeneration = generation.incrementAndGet()
@@ -45,6 +46,10 @@ class LiaAgentCoordinator(
 
         launcher.execute {
             if (runGeneration != generation.get()) return@execute
+
+            val role = LiaAgentRoleSelector.select(goal)
+            val profile = LiaAgentProfiles.forRole(role)
+            deliverRole(runGeneration, role, onAgentSelected)
 
             val modelInfo = modelStore.installedModel()
             if (modelInfo == null) {
@@ -77,7 +82,8 @@ class LiaAgentCoordinator(
             val runtime = LiaLocalAgentRuntime(
                 service = service,
                 model = model,
-                voice = voice
+                voice = voice,
+                profile = profile
             )
 
             currentModel = model
@@ -124,6 +130,20 @@ class LiaAgentCoordinator(
 
     fun hasInstalledModel(): Boolean =
         modelStore.isInstalled()
+
+    private fun deliverRole(
+        runGeneration: Long,
+        role: LiaAgentRole,
+        callback: (LiaAgentRole) -> Unit
+    ) {
+        if (runGeneration != generation.get()) return
+
+        callbackExecutor.execute {
+            if (runGeneration == generation.get()) {
+                callback(role)
+            }
+        }
+    }
 
     private fun deliver(
         runGeneration: Long,
