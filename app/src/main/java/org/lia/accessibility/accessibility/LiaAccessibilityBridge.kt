@@ -1,6 +1,7 @@
 package org.lia.accessibility.accessibility
 
 import java.lang.ref.WeakReference
+import org.lia.accessibility.device.HapticSignal
 import org.lia.accessibility.voice.VoiceVerification
 
 sealed interface AccessibilityBridgeResult {
@@ -54,6 +55,11 @@ object LiaAccessibilityBridge {
         val service = serviceReference?.get() ?: return false
         service.setFloatingBubbleEnabled(enabled)
         return true
+    }
+
+    fun signalListening(): Boolean {
+        val service = serviceReference?.get() ?: return false
+        return service.signalHaptic(HapticSignal.LISTENING)
     }
 
     fun cancel(): Boolean {
