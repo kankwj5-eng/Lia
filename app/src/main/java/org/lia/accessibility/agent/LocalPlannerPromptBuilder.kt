@@ -6,6 +6,7 @@ import org.lia.accessibility.agent.orchestration.LiaAgentProfiles
 
 object LocalPlannerPromptBuilder {
     private const val MAX_SCREEN_CHARS = 6_000
+    private const val MAX_CONVERSATION_CHARS = 3_000
     private const val MAX_EVENT_COUNT = 8
 
     fun buildSystemPrompt(
@@ -52,6 +53,7 @@ object LocalPlannerPromptBuilder {
 
     fun buildTurn(
         goal: String,
+        conversationContext: String,
         state: PhoneState,
         screen: ScreenSnapshot,
         events: List<AgentEvent>
@@ -81,6 +83,11 @@ object LocalPlannerPromptBuilder {
             appendLine("OBJETIVO:")
             appendLine(goal.take(2_000))
             appendLine()
+            if (conversationContext.isNotBlank()) {
+                appendLine("CONVERSACIÓN RECIENTE:")
+                appendLine(conversationContext.takeLast(MAX_CONVERSATION_CHARS))
+                appendLine()
+            }
             appendLine("ESTADO DEL TELÉFONO:")
             appendLine(state.compactText())
             appendLine()
