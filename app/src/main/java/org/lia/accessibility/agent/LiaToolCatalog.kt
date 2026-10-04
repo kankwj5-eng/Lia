@@ -263,6 +263,57 @@ object LiaToolCatalog {
             )
         ),
         LiaToolSpec(
+            name = "open_internet_panel",
+            description = "Abre el panel de conectividad de Android.",
+            risk = ActionRisk.ROUTINE,
+            safeToRetry = true
+        ),
+        LiaToolSpec(
+            name = "open_bluetooth_settings",
+            description = "Abre la configuración de Bluetooth de Android.",
+            risk = ActionRisk.ROUTINE,
+            safeToRetry = true
+        ),
+        LiaToolSpec(
+            name = "open_web",
+            description = "Abre una dirección web HTTP o HTTPS en el navegador.",
+            risk = ActionRisk.ROUTINE,
+            safeToRetry = true,
+            parameters = listOf(
+                ToolParameterSpec(
+                    "url",
+                    ToolParameterType.STRING,
+                    description = "Dirección web completa."
+                )
+            )
+        ),
+        LiaToolSpec(
+            name = "search_web",
+            description = "Inicia una búsqueda web con la consulta indicada.",
+            risk = ActionRisk.ROUTINE,
+            safeToRetry = true,
+            parameters = listOf(
+                ToolParameterSpec(
+                    "query",
+                    ToolParameterType.STRING,
+                    description = "Texto que se debe buscar."
+                )
+            )
+        ),
+        LiaToolSpec(
+            name = "copy_text",
+            description = "Copia texto al portapapeles del dispositivo.",
+            risk = ActionRisk.ROUTINE,
+            safeToRetry = true,
+            parameters = listOf(
+                ToolParameterSpec(
+                    "text",
+                    ToolParameterType.STRING,
+                    description = "Texto que se copiará."
+                )
+            )
+        ),
+        LiaToolSpec(
             name = "get_location",
             description = "Obtiene la ubicación actual autorizada y su precisión.",
             risk = ActionRisk.SENSITIVE,
