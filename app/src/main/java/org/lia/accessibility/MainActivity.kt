@@ -26,6 +26,7 @@ import org.lia.accessibility.accessibility.AccessibilityBridgeResult
 import org.lia.accessibility.accessibility.LiaAccessibilityBridge
 import org.lia.accessibility.accessibility.LiaAccessibilityService
 import org.lia.accessibility.ai.PlannerModelStore
+import org.lia.accessibility.assistant.LiaVoiceInteractionService
 import org.lia.accessibility.conversation.ConversationSpeaker
 import org.lia.accessibility.conversation.ConversationStore
 import org.lia.accessibility.permissions.AndroidPermissionNavigator
@@ -49,6 +50,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var plannerStatusText: TextView
     private lateinit var commandStatusText: TextView
     private lateinit var assistantStatusText: TextView
+    private lateinit var attentionStatusText: TextView
     private lateinit var activeAgentText: TextView
     private lateinit var chatHistoryText: TextView
     private lateinit var chatInput: EditText
@@ -62,6 +64,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var assistantRoleButton: Button
     private lateinit var sendChatButton: Button
     private lateinit var voiceProtectionSwitch: SwitchMaterial
+    private lateinit var alwaysListeningSwitch: SwitchMaterial
     private lateinit var bubbleSwitch: SwitchMaterial
     private lateinit var voiceControlsGroup: View
     private lateinit var preferences: LiaPreferences
@@ -79,6 +82,8 @@ class MainActivity : AppCompatActivity() {
     private var engine: SherpaSpeakerEngine? = null
     private var commandTranscriber: SherpaWhisperCommandTranscriber? = null
     private var resumeVoiceCommandAfterMicPermission = false
+    private var resumeAlwaysListeningAfterMicPermission = false
+    private var updatingAttentionSwitch = false
     private var continueAccessibilitySetupOnResume = false
     private var continueNotificationSetupOnResume = false
 
@@ -90,22 +95,40 @@ class MainActivity : AppCompatActivity() {
 
     private val microphonePermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted && resumeVoiceCommandAfterMicPermission) {
-                resumeVoiceCommandAfterMicPermission = false
-                talkToLia()
-            } else if (granted) {
-                status("Micrófono autorizado. Pulsa registrar muestra otra vez.")
-            } else {
-                resumeVoiceCommandAfterMicPermission = false
-                status("Lía necesita acceso al micrófono para registrar tu identidad de voz.")
-                commandStatus("Sin permiso de micrófono no puedo escuchar órdenes.")
+            when {
+                granted && resumeVoiceCommandAfterMicPermission -> {
+                    resumeVoiceCommandAfterMicPermission = false
+                    talkToLia()
+                }
+
+                granted && resumeAlwaysListeningAfterMicPermission -> {
+                    resumeAlwaysListeningAfterMicPermission = false
+                    setAlwaysListeningEnabled(true)
+                }
+
+                granted -> {
+                    status("Micrófono autorizado. Pulsa registrar muestra otra vez.")
+                    refreshAttentionStatus()
+                }
+
+                else -> {
+                    resumeVoiceCommandAfterMicPermission = false
+                    resumeAlwaysListeningAfterMicPermission = false
+                    preferences.alwaysListeningEnabled = false
+                    syncAlwaysListeningSwitch()
+                    status("Lía necesita acceso al micrófono para reconocer tu voz.")
+                    commandStatus("Sin permiso de micrófono no puedo escuchar órdenes.")
+                    refreshAttentionStatus()
+                }
             }
         }
 
     private val assistantRoleRequest =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             refreshAssistantStatus()
-        refreshPermissionStatus()
+            refreshPermissionStatus()
+            refreshAttentionStatus()
+            notifyAttentionService()
         }
 
     private val plannerModelPicker =
@@ -132,6 +155,7 @@ class MainActivity : AppCompatActivity() {
         plannerStatusText = findViewById(R.id.plannerStatusText)
         commandStatusText = findViewById(R.id.commandStatusText)
         assistantStatusText = findViewById(R.id.assistantStatusText)
+        attentionStatusText = findViewById(R.id.attentionStatusText)
         activeAgentText = findViewById(R.id.activeAgentText)
         chatHistoryText = findViewById(R.id.chatHistoryText)
         chatInput = findViewById(R.id.chatInput)
@@ -145,11 +169,13 @@ class MainActivity : AppCompatActivity() {
         assistantRoleButton = findViewById(R.id.assistantRoleButton)
         sendChatButton = findViewById(R.id.sendChatButton)
         voiceProtectionSwitch = findViewById(R.id.voiceProtectionSwitch)
+        alwaysListeningSwitch = findViewById(R.id.alwaysListeningSwitch)
         bubbleSwitch = findViewById(R.id.bubbleSwitch)
         voiceControlsGroup = findViewById(R.id.voiceControlsGroup)
         renderConversationHistory()
 
         voiceProtectionSwitch.isChecked = preferences.voiceProtectionEnabled
+        alwaysListeningSwitch.isChecked = preferences.alwaysListeningEnabled
         bubbleSwitch.isChecked = preferences.bubbleEnabled
         refreshVoiceProtectionUi()
 
@@ -166,6 +192,14 @@ class MainActivity : AppCompatActivity() {
                 )
             } else {
                 commandStatus("Protección por voz desactivada. Lía puede escucharte sin comprobar identidad.")
+            }
+            notifyAttentionService()
+            refreshAttentionStatus()
+        }
+
+        alwaysListeningSwitch.setOnCheckedChangeListener { _, enabled ->
+            if (!updatingAttentionSwitch) {
+                setAlwaysListeningEnabled(enabled)
             }
         }
 
@@ -230,6 +264,7 @@ class MainActivity : AppCompatActivity() {
         refreshPlannerStatus()
         refreshCommandStatus()
         refreshAssistantStatus()
+        refreshAttentionStatus()
 
         if (preferences.voiceProtectionEnabled) {
             status(
@@ -257,6 +292,8 @@ class MainActivity : AppCompatActivity() {
             if (::bubbleSwitch.isInitialized) {
                 bubbleSwitch.isChecked = preferences.bubbleEnabled
             }
+            syncAlwaysListeningSwitch()
+            refreshAttentionStatus()
         }
 
         if (continueAccessibilitySetupOnResume) {
@@ -443,6 +480,16 @@ class MainActivity : AppCompatActivity() {
 
     private val agentStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == LiaVoiceInteractionService.ACTION_ATTENTION_STATE) {
+                val message = intent.getStringExtra(
+                    LiaVoiceInteractionService.EXTRA_ATTENTION_MESSAGE
+                ).orEmpty()
+                if (message.isNotBlank()) {
+                    attentionStatusText.text = message
+                }
+                return
+            }
+
             if (intent?.action != LiaAccessibilityService.ACTION_AGENT_STATE) return
             val status = intent.getStringExtra(LiaAccessibilityService.EXTRA_AGENT_STATUS).orEmpty()
             val message = intent.getStringExtra(LiaAccessibilityService.EXTRA_MESSAGE).orEmpty()
@@ -473,7 +520,10 @@ class MainActivity : AppCompatActivity() {
         ContextCompat.registerReceiver(
             this,
             agentStateReceiver,
-            IntentFilter(LiaAccessibilityService.ACTION_AGENT_STATE),
+            IntentFilter().apply {
+                addAction(LiaAccessibilityService.ACTION_AGENT_STATE)
+                addAction(LiaVoiceInteractionService.ACTION_ATTENTION_STATE)
+            },
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
     }
@@ -484,6 +534,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleAssistantLaunchIntent(intent: Intent?) {
+        val transcript = intent
+            ?.getStringExtra(EXTRA_VOICE_TRANSCRIPT)
+            ?.trim()
+            .orEmpty()
+
+        if (transcript.isNotBlank()) {
+            val verification = VoiceVerification(
+                matched = intent?.getBooleanExtra(EXTRA_VOICE_MATCHED, false) == true,
+                score = intent?.getFloatExtra(EXTRA_VOICE_SCORE, 0f) ?: 0f,
+                threshold = intent?.getFloatExtra(EXTRA_VOICE_THRESHOLD, 0f) ?: 0f,
+                message = "Orden recibida desde la escucha continua de Lía."
+            )
+            intent?.removeExtra(EXTRA_VOICE_TRANSCRIPT)
+            startTranscriptGoal(transcript, verification)
+            return
+        }
+
         if (intent?.getBooleanExtra(EXTRA_START_VOICE_COMMAND, false) != true) {
             return
         }
@@ -520,12 +587,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshAssistantStatus() {
-        val assistantActive = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val roleManager = getSystemService(RoleManager::class.java)
-            roleManager?.isRoleHeld(RoleManager.ROLE_ASSISTANT) == true
-        } else {
-            false
-        }
+        val assistantActive = isAssistantRoleActive()
         val controlActive = LiaAccessibilityBridge.isConnected()
 
         assistantStatus(
@@ -579,6 +641,8 @@ class MainActivity : AppCompatActivity() {
                     commandStatus(
                         "Reconocimiento de órdenes offline listo para español."
                     )
+                    notifyAttentionService()
+                    refreshAttentionStatus()
                 }.onFailure { error ->
                     commandStatus(
                         "No pude preparar el reconocimiento de órdenes: " +
@@ -937,6 +1001,8 @@ class MainActivity : AppCompatActivity() {
                         samples.forEach { it.fill(0f) }
                         samples.clear()
                         status("Listo. Ya puedo reconocer mejor tu voz. Coincidencia del perfil: " + consistency + " %.")
+                        notifyAttentionService()
+                        refreshAttentionStatus()
                     } else {
                         status(quality.message)
                     }
@@ -1014,6 +1080,88 @@ class MainActivity : AppCompatActivity() {
         return false
     }
 
+    private fun setAlwaysListeningEnabled(enabled: Boolean) {
+        if (!enabled) {
+            preferences.alwaysListeningEnabled = false
+            syncAlwaysListeningSwitch()
+            notifyAttentionService()
+            refreshAttentionStatus()
+            return
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            preferences.alwaysListeningEnabled = false
+            syncAlwaysListeningSwitch()
+            resumeAlwaysListeningAfterMicPermission = true
+            microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+            return
+        }
+
+        preferences.alwaysListeningEnabled = true
+        syncAlwaysListeningSwitch()
+
+        if (!commandModelProvisioner.isInstalled()) {
+            attentionStatusText.text =
+                "Prepara la escucha offline para que Lía pueda mantenerse atenta."
+        }
+
+        if (!isAssistantRoleActive()) {
+            attentionStatusText.text =
+                "Para mantenerse atenta en segundo plano, elige Lía como asistente del sistema."
+            requestAssistantRole()
+        }
+
+        notifyAttentionService()
+        refreshAttentionStatus()
+    }
+
+    private fun syncAlwaysListeningSwitch() {
+        if (!::alwaysListeningSwitch.isInitialized) return
+        updatingAttentionSwitch = true
+        alwaysListeningSwitch.isChecked = preferences.alwaysListeningEnabled
+        updatingAttentionSwitch = false
+    }
+
+    private fun notifyAttentionService() {
+        sendBroadcast(
+            Intent(LiaVoiceInteractionService.ACTION_REFRESH_ATTENTION)
+                .setPackage(packageName)
+        )
+    }
+
+    private fun isAssistantRoleActive(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
+        val roleManager = getSystemService(RoleManager::class.java)
+        return roleManager?.isRoleHeld(RoleManager.ROLE_ASSISTANT) == true
+    }
+
+    private fun refreshAttentionStatus() {
+        if (!::attentionStatusText.isInitialized) return
+
+        attentionStatusText.text = when {
+            !preferences.alwaysListeningEnabled ->
+                "Siempre atenta está desactivado. Chat, botón y activación manual siguen disponibles."
+
+            ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) !=
+                PackageManager.PERMISSION_GRANTED ->
+                "Falta permiso de micrófono."
+
+            !commandModelProvisioner.isInstalled() ->
+                "Falta preparar la escucha offline."
+
+            !isAssistantRoleActive() ->
+                "Elige Lía como asistente del sistema para mantenerla atenta en segundo plano."
+
+            preferences.voiceProtectionEnabled && !store.hasProfile() ->
+                "Registra tu identidad de voz para proteger las órdenes continuas."
+
+            else ->
+                "Lista · di “Lía” seguido de una orden. Todo el reconocimiento se procesa localmente."
+        }
+    }
+
     private fun refreshVoiceProtectionUi() {
         if (!::voiceControlsGroup.isInitialized) return
         voiceControlsGroup.visibility =
@@ -1060,6 +1208,14 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_START_VOICE_COMMAND =
             "org.lia.accessibility.extra.START_VOICE_COMMAND"
+        const val EXTRA_VOICE_TRANSCRIPT =
+            "org.lia.accessibility.extra.VOICE_TRANSCRIPT"
+        const val EXTRA_VOICE_MATCHED =
+            "org.lia.accessibility.extra.VOICE_MATCHED"
+        const val EXTRA_VOICE_SCORE =
+            "org.lia.accessibility.extra.VOICE_SCORE"
+        const val EXTRA_VOICE_THRESHOLD =
+            "org.lia.accessibility.extra.VOICE_THRESHOLD"
 
         private const val COMMAND_DURATION_MS = 7_000
     }
