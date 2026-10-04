@@ -1,5 +1,7 @@
 package org.lia.accessibility.agent
 
+import org.lia.accessibility.agent.tools.*
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -31,7 +33,7 @@ class StrictToolProtocolTest {
     fun rejectsUnknownArguments() {
         val result = StrictToolProtocol.validate(
             "home",
-            mapOf("command" to ToolValue.Text("rm -rf"))
+            mapOf("command" to ToolValue.Text("argumento_desconocido"))
         )
         assertTrue(result is ToolProtocolResult.Rejected)
     }
