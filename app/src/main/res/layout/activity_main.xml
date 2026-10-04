@@ -15,7 +15,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingStart="18dp"
-        android:paddingTop="20dp"
+        android:paddingTop="16dp"
         android:paddingEnd="18dp"
         android:paddingBottom="40dp">
 
@@ -26,17 +26,17 @@
             android:orientation="horizontal">
 
             <com.google.android.material.card.MaterialCardView
-                android:layout_width="52dp"
-                android:layout_height="52dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 app:cardBackgroundColor="@color/lia_primary_strong"
-                app:cardCornerRadius="26dp"
+                app:cardCornerRadius="24dp"
                 app:cardElevation="0dp">
 
                 <ImageView
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:contentDescription="Lía"
-                    android:padding="14dp"
+                    android:padding="13dp"
                     android:src="@drawable/ic_lia_spark"
                     app:tint="@color/lia_on_primary" />
             </com.google.android.material.card.MaterialCardView>
@@ -53,13 +53,13 @@
                     android:layout_height="wrap_content"
                     android:text="Lía"
                     android:textColor="@color/lia_text"
-                    android:textSize="28sp"
+                    android:textSize="27sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Agente local · privado · en tu teléfono"
+                    android:text="Agente local · privado"
                     android:textColor="@color/lia_text_secondary"
                     android:textSize="13sp" />
             </LinearLayout>
@@ -74,112 +74,32 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingStart="12dp"
-                    android:paddingTop="7dp"
-                    android:paddingEnd="12dp"
-                    android:paddingBottom="7dp"
+                    android:paddingStart="10dp"
+                    android:paddingTop="6dp"
+                    android:paddingEnd="10dp"
+                    android:paddingBottom="6dp"
                     android:text="● LOCAL"
                     android:textColor="@color/lia_success"
-                    android:textSize="12sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            app:cardBackgroundColor="@color/lia_surface_glass"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeColor="@color/lia_outline_soft"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="18dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:contentDescription="Consola del agente"
-                        android:src="@drawable/ic_lia_brain"
-                        app:tint="@color/lia_primary" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="9dp"
-                        android:layout_weight="1"
-                        android:text="Consola del agente"
-                        android:textColor="@color/lia_text"
-                        android:textSize="17sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="5 agentes · 27 herramientas"
-                        android:textColor="@color/lia_accent"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/assistantStatusText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:accessibilityLiveRegion="polite"
-                    android:text="Comprobando control de Android…"
-                    android:textColor="@color/lia_text_secondary"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/plannerStatusText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:accessibilityLiveRegion="polite"
-                    android:text="Comprobando cerebro local…"
-                    android:textColor="@color/lia_text_secondary"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/commandStatusText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:accessibilityLiveRegion="polite"
-                    android:text="Preparando agente…"
-                    android:textColor="@color/lia_primary"
-                    android:textSize="14sp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Habla o escribe con Lía"
+            android:layout_marginTop="16dp"
+            android:text="¿Qué quieres hacer?"
             android:textColor="@color/lia_text"
-            android:textSize="20sp"
+            android:textSize="19sp"
             android:textStyle="bold" />
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="8dp"
             app:cardBackgroundColor="@color/lia_surface"
-            app:cardCornerRadius="28dp"
+            app:cardCornerRadius="26dp"
             app:cardElevation="0dp"
             app:strokeColor="@color/lia_outline"
             app:strokeWidth="1dp">
@@ -188,29 +108,29 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="14dp">
 
                 <TextView
                     android:id="@+id/chatHistoryText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="118dp"
-                    android:padding="4dp"
-                    android:text="Lía&#10;Hola. Dime qué quieres hacer en tu teléfono y usaré mis herramientas para intentarlo."
+                    android:minHeight="62dp"
+                    android:padding="2dp"
+                    android:text="Lía&#10;Hola. Dime qué quieres que haga en tu teléfono."
                     android:textColor="@color/lia_text"
                     android:textIsSelectable="true"
-                    android:textSize="15sp" />
+                    android:textSize="14sp" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="8dp"
                     app:boxBackgroundColor="@color/lia_surface_high"
                     app:boxBackgroundMode="filled"
-                    app:boxCornerRadiusBottomEnd="20dp"
-                    app:boxCornerRadiusBottomStart="20dp"
-                    app:boxCornerRadiusTopEnd="20dp"
-                    app:boxCornerRadiusTopStart="20dp"
+                    app:boxCornerRadiusBottomEnd="18dp"
+                    app:boxCornerRadiusBottomStart="18dp"
+                    app:boxCornerRadiusTopEnd="18dp"
+                    app:boxCornerRadiusTopStart="18dp"
                     app:boxStrokeColor="@color/lia_primary"
                     app:hintTextColor="@color/lia_text_secondary">
 
@@ -218,11 +138,11 @@
                         android:id="@+id/chatInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Ej.: abre WhatsApp y busca a mamá"
+                        android:hint="Escribe una orden para Lía"
                         android:imeOptions="actionSend"
                         android:inputType="textCapSentences|textMultiLine"
-                        android:maxLines="4"
-                        android:minHeight="56dp"
+                        android:maxLines="3"
+                        android:minHeight="50dp"
                         android:textColor="@color/lia_text"
                         android:textColorHint="@color/lia_text_secondary" />
                 </com.google.android.material.textfield.TextInputLayout>
@@ -230,19 +150,19 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="8dp"
                     android:orientation="horizontal">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/sendChatButton"
                         style="@style/Widget.Material3.Button"
                         android:layout_width="0dp"
-                        android:layout_height="54dp"
-                        android:layout_marginEnd="6dp"
+                        android:layout_height="50dp"
+                        android:layout_marginEnd="5dp"
                         android:layout_weight="1"
                         android:text="Enviar"
                         android:textAllCaps="false"
-                        app:cornerRadius="18dp"
+                        app:cornerRadius="17dp"
                         app:icon="@drawable/ic_lia_spark"
                         app:iconGravity="textStart" />
 
@@ -250,12 +170,12 @@
                         android:id="@+id/talkToLiaButton"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
-                        android:layout_height="54dp"
-                        android:layout_marginStart="6dp"
+                        android:layout_height="50dp"
+                        android:layout_marginStart="5dp"
                         android:layout_weight="1"
                         android:text="Hablar"
                         android:textAllCaps="false"
-                        app:cornerRadius="18dp"
+                        app:cornerRadius="17dp"
                         app:icon="@drawable/ic_lia_mic"
                         app:iconGravity="textStart" />
                 </LinearLayout>
@@ -264,17 +184,96 @@
                     android:id="@+id/cancelAgentButton"
                     style="@style/Widget.Material3.Button.TextButton"
                     android:layout_width="match_parent"
-                    android:layout_height="46dp"
-                    android:layout_marginTop="2dp"
-                    android:text="Detener tarea actual"
+                    android:layout_height="44dp"
+                    android:text="Detener tarea"
                     android:textAllCaps="false" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            app:cardBackgroundColor="@color/lia_surface_glass"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/lia_outline_soft"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="Consola del agente"
+                        android:src="@drawable/ic_lia_brain"
+                        app:tint="@color/lia_primary" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:text="Consola del agente"
+                        android:textColor="@color/lia_text"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="5 agentes · 27 herramientas"
+                        android:textColor="@color/lia_accent"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/commandStatusText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:accessibilityLiveRegion="polite"
+                    android:text="Preparando agente…"
+                    android:textColor="@color/lia_primary"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/plannerStatusText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:accessibilityLiveRegion="polite"
+                    android:text="Comprobando cerebro local…"
+                    android:textColor="@color/lia_text_secondary"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/assistantStatusText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:accessibilityLiveRegion="polite"
+                    android:text="Comprobando control de Android…"
+                    android:textColor="@color/lia_text_secondary"
+                    android:textSize="13sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="26dp"
+            android:layout_marginTop="24dp"
             android:text="Accesos de Android"
             android:textColor="@color/lia_text"
             android:textSize="20sp"
@@ -284,7 +283,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Lía te lleva a cada permiso y comprueba el estado al regresar. Android siempre conserva la última confirmación."
+            android:text="Lía te guía hasta cada permiso y comprueba el estado al regresar."
             android:textColor="@color/lia_text_secondary"
             android:textSize="14sp" />
 
