@@ -55,6 +55,12 @@ class MainActivitySmokeTest {
 
             // La identidad de voz es opcional y sus controles permanecen
             // ocultos hasta que la persona activa la protección por voz.
+            onView(withId(R.id.alwaysListeningSwitch))
+                .perform(scrollTo())
+                .check(matches(isDisplayed()))
+            onView(withId(R.id.attentionStatusText))
+                .perform(scrollTo())
+                .check(matches(isDisplayed()))
             onView(withId(R.id.voiceProtectionSwitch))
                 .perform(scrollTo())
                 .check(matches(isDisplayed()))
