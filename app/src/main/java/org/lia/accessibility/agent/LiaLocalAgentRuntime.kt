@@ -71,7 +71,10 @@ class LiaLocalAgentRuntime(
         cancelled = true
     }
 
-    suspend fun run(goal: String): LocalAgentOutcome {
+    suspend fun run(
+        goal: String,
+        conversationContext: String = ""
+    ): LocalAgentOutcome {
         if (goal.isBlank()) {
             return LocalAgentOutcome.Failed(
                 reason = "El objetivo está vacío.",
@@ -188,6 +191,7 @@ class LiaLocalAgentRuntime(
                 val decision = planner.plan(
                     goal = goal,
                     profile = profile,
+                    conversationContext = conversationContext,
                     state = state,
                     screen = before,
                     events = events
