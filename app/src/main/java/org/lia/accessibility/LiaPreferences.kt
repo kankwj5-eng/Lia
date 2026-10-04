@@ -18,8 +18,15 @@ class LiaPreferences(context: Context) {
             preferences.edit().putBoolean(KEY_BUBBLE_ENABLED, value).apply()
         }
 
+    var alwaysListeningEnabled: Boolean
+        get() = preferences.getBoolean(KEY_ALWAYS_LISTENING, false)
+        set(value) {
+            preferences.edit().putBoolean(KEY_ALWAYS_LISTENING, value).apply()
+        }
+
     companion object {
         private const val KEY_VOICE_PROTECTION = "voice_protection_enabled"
         private const val KEY_BUBBLE_ENABLED = "bubble_enabled"
+        private const val KEY_ALWAYS_LISTENING = "always_listening_enabled"
     }
 }
