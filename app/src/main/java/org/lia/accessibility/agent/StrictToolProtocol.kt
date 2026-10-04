@@ -39,7 +39,10 @@ object StrictToolProtocol {
     private const val MAX_TEXT_ARGUMENT_CHARS = 2_000
     private val topLevelKeys = setOf("tool", "arguments")
 
-    fun parse(raw: String): ToolProtocolResult {
+    fun parse(
+        raw: String,
+        allowedToolNames: Set<String>? = null
+    ): ToolProtocolResult {
         val text = normalizeModelResponse(raw)
 
         if (text.isEmpty()) {
@@ -92,13 +95,20 @@ object StrictToolProtocol {
             values[key] = converted
         }
 
-        return validate(toolName, values)
+        return validate(toolName, values, allowedToolNames)
     }
 
     fun validate(
         toolName: String,
-        arguments: Map<String, ToolValue>
+        arguments: Map<String, ToolValue>,
+        allowedToolNames: Set<String>? = null
     ): ToolProtocolResult {
+        if (allowedToolNames != null && toolName !in allowedToolNames) {
+            return ToolProtocolResult.Rejected(
+                "La herramienta " + toolName + " no pertenece al contrato del agente activo."
+            )
+        }
+
         val spec = LiaToolCatalog.find(toolName)
             ?: return ToolProtocolResult.Rejected("Herramienta desconocida: " + toolName)
 
