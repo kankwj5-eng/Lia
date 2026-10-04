@@ -52,7 +52,7 @@ object LiaAgentRoleSelector {
     fun select(goal: String): LiaAgentRole {
         val text = normalize(goal)
         val scores = signals.mapValues { (_, terms) ->
-            terms.count { text.contains(it) }
+            terms.count { termMatches(text, it) }
         }
 
         val active = scores
@@ -68,6 +68,16 @@ object LiaAgentRoleSelector {
         if (otherDomains > 0) return LiaAgentRole.GENERAL
 
         return strongest.key
+    }
+
+    private fun termMatches(text: String, term: String): Boolean {
+        val normalizedTerm = normalize(term)
+        return if (' ' in normalizedTerm) {
+            text.contains(normalizedTerm)
+        } else {
+            Regex("(^|\\s)" + Regex.escape(normalizedTerm) + "(\\s|$)")
+                .containsMatchIn(text)
+        }
     }
 
     private fun normalize(value: String): String =
