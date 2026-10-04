@@ -88,10 +88,18 @@ class LiaLocalAgentRuntime(
         cancelled = false
         recentActionKeys.clear()
 
+        val role = LiaAgentRoleSelector.select(goal)
         val events = mutableListOf<AgentEvent>()
         var recoveries = 0
         var lastFingerprint: String? = null
         var repeatedObservationCount = 0
+
+        events += AgentEvent(
+            type = AgentEventType.PHASE,
+            phase = AgentPhase.PLANNING,
+            step = 0,
+            message = "Agente especialista activo: " + role.displayName + "."
+        )
 
         fun emit(
             type: AgentEventType,
@@ -175,6 +183,7 @@ class LiaLocalAgentRuntime(
             when (
                 val decision = planner.plan(
                     goal = goal,
+                    role = role,
                     state = state,
                     screen = before,
                     events = events
