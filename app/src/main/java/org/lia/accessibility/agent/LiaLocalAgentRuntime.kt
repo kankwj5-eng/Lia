@@ -7,6 +7,7 @@ import org.lia.accessibility.accessibility.ScreenObservationResult
 import org.lia.accessibility.accessibility.ScreenSnapshot
 import org.lia.accessibility.ai.LocalLanguageModel
 import org.lia.accessibility.agent.orchestration.LiaAgentProfiles
+import org.lia.accessibility.agent.orchestration.LiaAgentRoleSelector
 import org.lia.accessibility.location.LocationContextProvider
 import org.lia.accessibility.security.ActionRisk
 import org.lia.accessibility.vision.WorldVisionActivity
