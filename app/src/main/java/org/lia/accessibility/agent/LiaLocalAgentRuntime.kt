@@ -8,6 +8,10 @@ import org.lia.accessibility.accessibility.ScreenSnapshot
 import org.lia.accessibility.ai.LocalLanguageModel
 import org.lia.accessibility.agent.planning.LocalModelPlanner
 import org.lia.accessibility.agent.planning.LocalPlannerDecision
+import org.lia.accessibility.agent.tools.AuthorizedToolExecutor
+import org.lia.accessibility.agent.tools.EffectiveToolRiskPolicy
+import org.lia.accessibility.agent.tools.LiaToolCall
+import org.lia.accessibility.agent.tools.ToolExecutionResult
 import org.lia.accessibility.agent.orchestration.LiaAgentProfile
 import org.lia.accessibility.location.LocationContextProvider
 import org.lia.accessibility.security.ActionRisk
