@@ -1,5 +1,6 @@
 package org.lia.accessibility.agent
 
+import org.lia.accessibility.agent.orchestration.LiaAgentProfile
 import org.lia.accessibility.security.ActionRisk
 
 enum class ToolParameterType {
@@ -348,4 +349,7 @@ object LiaToolCatalog {
 
     fun find(name: String): LiaToolSpec? =
         tools.firstOrNull { it.name == name }
+
+    fun forProfile(profile: LiaAgentProfile): List<LiaToolSpec> =
+        tools.filter { it.name in profile.toolNames }
 }
