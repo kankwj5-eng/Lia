@@ -1,5 +1,7 @@
 package org.lia.accessibility.agent
 
+import org.lia.accessibility.agent.runtime.*
+
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
