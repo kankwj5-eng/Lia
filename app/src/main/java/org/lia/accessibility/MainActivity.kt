@@ -1010,22 +1010,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun status(text: String) {
         statusText.text = text
-        statusText.announceForAccessibility(text)
     }
 
     private fun plannerStatus(text: String) {
         plannerStatusText.text = text
-        plannerStatusText.announceForAccessibility(text)
     }
 
     private fun commandStatus(text: String) {
         commandStatusText.text = text
-        commandStatusText.announceForAccessibility(text)
     }
 
     private fun assistantStatus(text: String) {
         assistantStatusText.text = text
-        assistantStatusText.announceForAccessibility(text)
     }
 
     override fun onDestroy() {
