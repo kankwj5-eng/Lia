@@ -35,6 +35,7 @@ class LiaAgentCoordinator(
     fun start(
         goal: String,
         voice: VoiceVerification,
+        conversationContext: String = "",
         callback: (LocalAgentOutcome) -> Unit
     ) {
         val runGeneration = generation.incrementAndGet()
@@ -81,7 +82,10 @@ class LiaAgentCoordinator(
             currentRuntime = runtime
 
             val block: suspend () -> LocalAgentOutcome = {
-                runtime.run(goal)
+                runtime.run(
+                    goal = goal,
+                    conversationContext = conversationContext
+                )
             }
 
             block.startCoroutine(
