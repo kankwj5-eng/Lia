@@ -3,6 +3,7 @@ package org.lia.accessibility.agent
 import org.lia.accessibility.accessibility.ScreenSnapshot
 import org.lia.accessibility.ai.AgentTurn
 import org.lia.accessibility.ai.LocalLanguageModel
+import org.lia.accessibility.agent.orchestration.LiaAgentProfile
 
 sealed interface LocalPlannerDecision {
     data class Act(val call: LiaToolCall) : LocalPlannerDecision
@@ -20,7 +21,7 @@ class LocalModelPlanner(
 
     suspend fun plan(
         goal: String,
-        role: LiaAgentRole,
+        profile: LiaAgentProfile,
         state: PhoneState,
         screen: ScreenSnapshot,
         events: List<AgentEvent>
@@ -37,7 +38,7 @@ class LocalModelPlanner(
 
         repeat(maxProtocolAttempts) {
             val system = buildString {
-                append(LocalPlannerPromptBuilder.buildSystemPrompt(role))
+                append(LocalPlannerPromptBuilder.buildSystemPrompt(profile))
                 correction?.let {
                     appendLine()
                     appendLine()
@@ -60,7 +61,12 @@ class LocalModelPlanner(
                 )
             }
 
-            when (val parsed = StrictToolProtocol.parse(raw)) {
+            when (
+                val parsed = StrictToolProtocol.parse(
+                    raw = raw,
+                    allowedToolNames = profile.toolNames
+                )
+            ) {
                 is ToolProtocolResult.Accepted -> {
                     val call = parsed.call
                     return if (call.name == "finish") {
