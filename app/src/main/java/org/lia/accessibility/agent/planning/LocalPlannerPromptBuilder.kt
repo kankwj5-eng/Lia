@@ -2,8 +2,8 @@ package org.lia.accessibility.agent.planning
 
 import org.lia.accessibility.accessibility.ScreenSnapshot
 import org.lia.accessibility.agent.AgentEvent
-import org.lia.accessibility.agent.LiaToolCatalog
 import org.lia.accessibility.agent.PhoneState
+import org.lia.accessibility.agent.tools.LiaToolCatalog
 import org.lia.accessibility.agent.orchestration.LiaAgentProfile
 import org.lia.accessibility.agent.orchestration.LiaAgentRole
 import org.lia.accessibility.agent.orchestration.LiaAgentProfiles
