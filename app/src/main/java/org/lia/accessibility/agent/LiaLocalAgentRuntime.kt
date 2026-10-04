@@ -6,6 +6,7 @@ import org.lia.accessibility.accessibility.LiaAccessibilityService
 import org.lia.accessibility.accessibility.ScreenObservationResult
 import org.lia.accessibility.accessibility.ScreenSnapshot
 import org.lia.accessibility.ai.LocalLanguageModel
+import org.lia.accessibility.agent.orchestration.LiaAgentProfiles
 import org.lia.accessibility.location.LocationContextProvider
 import org.lia.accessibility.security.ActionRisk
 import org.lia.accessibility.vision.WorldVisionActivity
@@ -89,6 +90,9 @@ class LiaLocalAgentRuntime(
         recentActionKeys.clear()
 
         val role = LiaAgentRoleSelector.select(goal)
+        val profile = LiaAgentProfiles.forRole(role)
+        val maxSteps = minOf(config.maxSteps, profile.maxSteps)
+        val maxRecoveries = minOf(config.maxRecoveries, profile.maxRecoveries)
         val events = mutableListOf<AgentEvent>()
         var recoveries = 0
         var lastFingerprint: String? = null
@@ -119,7 +123,7 @@ class LiaLocalAgentRuntime(
             )
         }
 
-        for (step in 1..config.maxSteps) {
+        for (step in 1..maxSteps) {
             if (cancelled) {
                 emit(
                     AgentEventType.FAILURE,
@@ -163,7 +167,7 @@ class LiaLocalAgentRuntime(
                     fingerprint = fingerprint
                 )
 
-                if (recoveries > config.maxRecoveries) {
+                if (recoveries > maxRecoveries) {
                     return LocalAgentOutcome.Failed(
                         reason = "Lía detectó estancamiento y detuvo la tarea.",
                         events = events.toList()
@@ -183,7 +187,7 @@ class LiaLocalAgentRuntime(
             when (
                 val decision = planner.plan(
                     goal = goal,
-                    role = role,
+                    profile = profile,
                     state = state,
                     screen = before,
                     events = events
@@ -198,7 +202,7 @@ class LiaLocalAgentRuntime(
                         decision.reason
                     )
 
-                    if (recoveries > config.maxRecoveries) {
+                    if (recoveries > maxRecoveries) {
                         return LocalAgentOutcome.Failed(
                             reason = decision.reason,
                             events = events.toList()
@@ -257,7 +261,7 @@ class LiaLocalAgentRuntime(
                             actionKey = call.actionKey
                         )
 
-                        if (recoveries > config.maxRecoveries) {
+                        if (recoveries > maxRecoveries) {
                             return LocalAgentOutcome.Failed(
                                 reason = "Lía detectó un bucle de herramientas.",
                                 events = events.toList()
@@ -326,7 +330,7 @@ class LiaLocalAgentRuntime(
 
                     if (!execution.accepted || !execution.performed) {
                         recoveries++
-                        if (recoveries > config.maxRecoveries) {
+                        if (recoveries > maxRecoveries) {
                             return LocalAgentOutcome.Failed(
                                 reason = execution.message,
                                 events = events.toList()
@@ -356,7 +360,7 @@ class LiaLocalAgentRuntime(
                                 actionKey = call.actionKey
                             )
 
-                            if (recoveries > config.maxRecoveries) {
+                            if (recoveries > maxRecoveries) {
                                 return LocalAgentOutcome.Failed(
                                     reason = "La interfaz no respondió a las acciones de Lía.",
                                     events = events.toList()
@@ -369,7 +373,7 @@ class LiaLocalAgentRuntime(
         }
 
         return LocalAgentOutcome.Failed(
-            reason = "Se alcanzó el límite de pasos sin completar la tarea.",
+            reason = "Se alcanzó el límite de " + maxSteps + " pasos sin completar la tarea.",
             events = events.toList()
         )
     }
