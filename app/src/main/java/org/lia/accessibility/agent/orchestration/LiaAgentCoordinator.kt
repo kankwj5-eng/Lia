@@ -2,8 +2,8 @@ package org.lia.accessibility.agent.orchestration
 
 import androidx.core.content.ContextCompat
 import org.lia.accessibility.accessibility.LiaAccessibilityService
-import org.lia.accessibility.agent.LiaLocalAgentRuntime
-import org.lia.accessibility.agent.LocalAgentOutcome
+import org.lia.accessibility.agent.runtime.LiaLocalAgentRuntime
+import org.lia.accessibility.agent.runtime.LocalAgentOutcome
 import org.lia.accessibility.ai.LiteRtLmLanguageModel
 import org.lia.accessibility.ai.LlamaCppLanguageModel
 import org.lia.accessibility.ai.ManagedLocalLanguageModel
