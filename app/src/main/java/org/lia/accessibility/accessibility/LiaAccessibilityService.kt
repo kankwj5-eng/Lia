@@ -186,6 +186,12 @@ class LiaAccessibilityService : AccessibilityService() {
     internal fun capturePhoneState(): PhoneState =
         phoneStateProvider.capture()
 
+    internal fun signalHaptic(signal: HapticSignal): Boolean {
+        if (!::haptics.isInitialized) return false
+        haptics.signal(signal)
+        return true
+    }
+
     internal fun startLocalAgentGoal(
         goal: String,
         voice: VoiceVerification
@@ -215,6 +221,7 @@ class LiaAccessibilityService : AccessibilityService() {
         ) { outcome ->
             when (outcome) {
                 is LocalAgentOutcome.Completed -> {
+                    haptics.signal(HapticSignal.COMPLETED)
                     conversationStore.add(ConversationSpeaker.LIA, outcome.result)
                     performSystemCommand(
                         voice = voice,
@@ -241,6 +248,7 @@ class LiaAccessibilityService : AccessibilityService() {
                 }
 
                 is LocalAgentOutcome.Failed -> {
+                    haptics.signal(HapticSignal.ERROR)
                     performSystemCommand(
                         voice = voice,
                         command = SystemCommand.Speak(outcome.reason)
