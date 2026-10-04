@@ -204,7 +204,14 @@ class LiaAccessibilityService : AccessibilityService() {
         agentCoordinator.start(
             goal = goal,
             voice = voice,
-            conversationContext = conversationContext
+            conversationContext = conversationContext,
+            onAgentSelected = { role ->
+                emitAgentState(
+                    status = "agent_selected",
+                    message = "Agente " + role.displayName + " activo.",
+                    agentRole = role.displayName
+                )
+            }
         ) { outcome ->
             when (outcome) {
                 is LocalAgentOutcome.Completed -> {
@@ -432,7 +439,8 @@ class LiaAccessibilityService : AccessibilityService() {
         status: String,
         message: String,
         toolName: String? = null,
-        risk: String? = null
+        risk: String? = null,
+        agentRole: String? = null
     ) {
         sendBroadcast(
             Intent(ACTION_AGENT_STATE)
@@ -442,6 +450,7 @@ class LiaAccessibilityService : AccessibilityService() {
                 .apply {
                     toolName?.let { putExtra(EXTRA_TOOL_NAME, it) }
                     risk?.let { putExtra(EXTRA_RISK, it) }
+                    agentRole?.let { putExtra(EXTRA_AGENT_ROLE, it) }
                 }
         )
     }
@@ -473,5 +482,6 @@ class LiaAccessibilityService : AccessibilityService() {
         const val EXTRA_AGENT_STATUS = "agent_status"
         const val EXTRA_TOOL_NAME = "tool_name"
         const val EXTRA_RISK = "risk"
+        const val EXTRA_AGENT_ROLE = "agent_role"
     }
 }
