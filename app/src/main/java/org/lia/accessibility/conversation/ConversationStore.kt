@@ -61,7 +61,7 @@ class ConversationStore(context: Context) {
             last?.speaker == ConversationSpeaker.USER &&
             last.text == currentGoal.trim()
         ) {
-            messages.removeLast()
+            messages.removeAt(messages.lastIndex)
         }
 
         if (messages.isEmpty()) return ""
