@@ -1,15 +1,19 @@
 package org.lia.accessibility.agent
 
 import org.lia.accessibility.accessibility.ScreenSnapshot
+import org.lia.accessibility.agent.orchestration.LiaAgentProfile
+import org.lia.accessibility.agent.orchestration.LiaAgentProfiles
 
 object LocalPlannerPromptBuilder {
     private const val MAX_SCREEN_CHARS = 6_000
     private const val MAX_EVENT_COUNT = 8
 
-    fun buildSystemPrompt(role: LiaAgentRole = LiaAgentRole.GENERAL): String = buildString {
+    fun buildSystemPrompt(
+        profile: LiaAgentProfile = LiaAgentProfiles.forRole(LiaAgentRole.GENERAL)
+    ): String = buildString {
         appendLine("Eres el planificador local de Lía, un agente de accesibilidad para Android.")
-        appendLine("Rol especialista activo: " + role.displayName + ".")
-        appendLine(role.mission)
+        appendLine("Rol especialista activo: " + profile.role.displayName + ".")
+        appendLine(profile.role.mission)
         appendLine("Tu única salida válida es UN objeto JSON con esta forma:")
         appendLine("{\"tool\":\"nombre\",\"arguments\":{\"argumento\":\"valor\"}}")
         appendLine("No uses Markdown. No escribas explicaciones fuera del JSON.")
@@ -22,7 +26,7 @@ object LocalPlannerPromptBuilder {
         appendLine()
         appendLine("Herramientas disponibles:")
 
-        LiaToolCatalog.tools.forEach { tool ->
+        LiaToolCatalog.forProfile(profile).forEach { tool ->
             append("- ").append(tool.name)
                 .append(" [").append(tool.risk.name.lowercase()).append("]")
                 .append(": ").append(tool.description)
