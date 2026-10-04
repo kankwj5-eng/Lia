@@ -9,7 +9,7 @@ enum class LiaAgentRole(
 ) {
     GENERAL(
         displayName = "General",
-        mission = "Resuelve conversaciones y tareas mixtas. Usa el mínimo número de herramientas necesarias."
+        mission = "Coordina conversaciones y tareas mixtas. Mantén una sola línea de control y usa el mínimo número de herramientas."
     ),
     NAVIGATION(
         displayName = "Navegación",
@@ -17,53 +17,58 @@ enum class LiaAgentRole(
     ),
     COMMUNICATION(
         displayName = "Comunicación",
-        mission = "Especialista en mensajes, llamadas y notificaciones. Conserva el contexto del destinatario y respeta siempre las autorizaciones sensibles."
+        mission = "Especialista en mensajes, llamadas y notificaciones. Conserva el destinatario correcto y respeta siempre las autorizaciones sensibles."
     ),
     VISION(
         displayName = "Visión",
-        mission = "Especialista en OCR, cámara y comprensión visual. Prefiere observar antes de actuar y declara incertidumbre cuando la percepción no sea suficiente."
+        mission = "Especialista en OCR, cámara y percepción. Observa antes de concluir y declara incertidumbre cuando la evidencia visual no sea suficiente."
     ),
     DEVICE(
         displayName = "Dispositivo",
-        mission = "Especialista en ajustes y utilidades del teléfono: conectividad, Bluetooth, linterna, volumen, multimedia, alarmas y temporizadores."
+        mission = "Especialista en utilidades del teléfono: conectividad, Bluetooth, linterna, volumen, multimedia, alarmas y temporizadores."
     )
 }
 
 object LiaAgentRoleSelector {
+    private val signals = mapOf(
+        LiaAgentRole.VISION to setOf(
+            "camara", "ver entorno", "que ves", "leer pantalla", "ocr",
+            "objeto", "producto", "billete", "color", "foto", "imagen"
+        ),
+        LiaAgentRole.COMMUNICATION to setOf(
+            "whatsapp", "mensaje", "sms", "notificacion", "responder",
+            "llamar", "llamada", "contacto"
+        ),
+        LiaAgentRole.DEVICE to setOf(
+            "bluetooth", "internet", "wifi", "linterna", "volumen",
+            "musica", "reproduc", "alarma", "temporizador"
+        ),
+        LiaAgentRole.NAVIGATION to setOf(
+            "abre", "abrir", "busca", "buscar", "toca", "pulsa",
+            "escribe", "scroll", "atras", "inicio", "recientes", "app"
+        )
+    )
+
     fun select(goal: String): LiaAgentRole {
         val text = normalize(goal)
-
-        return when {
-            containsAny(
-                text,
-                "camara", "ver entorno", "que ves", "leer pantalla", "ocr",
-                "objeto", "producto", "billete", "color", "foto", "imagen"
-            ) -> LiaAgentRole.VISION
-
-            containsAny(
-                text,
-                "whatsapp", "mensaje", "sms", "notificacion", "responder",
-                "llamar", "llamada", "contacto"
-            ) -> LiaAgentRole.COMMUNICATION
-
-            containsAny(
-                text,
-                "bluetooth", "internet", "wifi", "linterna", "volumen",
-                "musica", "reproduc", "alarma", "temporizador"
-            ) -> LiaAgentRole.DEVICE
-
-            containsAny(
-                text,
-                "abre", "abrir", "busca", "buscar", "toca", "pulsa",
-                "escribe", "scroll", "atras", "inicio", "recientes", "app"
-            ) -> LiaAgentRole.NAVIGATION
-
-            else -> LiaAgentRole.GENERAL
+        val scores = signals.mapValues { (_, terms) ->
+            terms.count { text.contains(it) }
         }
-    }
 
-    private fun containsAny(text: String, vararg terms: String): Boolean =
-        terms.any { text.contains(it) }
+        val active = scores
+            .filterValues { it > 0 }
+            .entries
+            .sortedByDescending { it.value }
+
+        if (active.isEmpty()) return LiaAgentRole.GENERAL
+
+        // Una orden que cruza dominios queda en el coordinador general.
+        val strongest = active.first()
+        val otherDomains = active.drop(1).count { it.value > 0 }
+        if (otherDomains > 0) return LiaAgentRole.GENERAL
+
+        return strongest.key
+    }
 
     private fun normalize(value: String): String =
         Normalizer.normalize(value, Normalizer.Form.NFD)
