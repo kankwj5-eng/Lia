@@ -3,6 +3,7 @@ package org.lia.accessibility.voice.listening
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import org.lia.accessibility.LiaPreferences
 import org.lia.accessibility.voice.OwnerVoiceAuthenticator
@@ -54,6 +55,9 @@ class AttentiveVoiceController(
     private var audioLoop: AttentiveAudioLoop? = null
     private var transcriber: SherpaWhisperCommandTranscriber? = null
     private var speakerEngine: SherpaSpeakerEngine? = null
+
+    @Volatile
+    private var followUpDeadlineElapsedMs: Long = 0L
 
     fun start(): AttentionStartResult {
         if (!preferences.alwaysListeningEnabled) {
@@ -137,21 +141,39 @@ class AttentiveVoiceController(
 
                 val speechToText = transcriber ?: return@execute
                 val transcript = speechToText.transcribe(audio)
-                val wake = WakePhraseMatcher.match(transcript.text)
+                val now = SystemClock.elapsedRealtime()
+                val followUpActive =
+                    followUpDeadlineElapsedMs > 0L &&
+                        now <= followUpDeadlineElapsedMs
 
-                when (wake) {
-                    null -> Unit
-
-                    WakePhraseMatch.WakeOnly -> {
-                        audioLoop?.muteFor(WAKE_COOLDOWN_MS)
-                        onWakeOnly()
+                if (followUpActive && transcript.text.isNotBlank()) {
+                    followUpDeadlineElapsedMs = 0L
+                    val verification = verifyIfNeeded(audio)
+                    if (verification.matched) {
+                        audioLoop?.muteFor(COMMAND_COOLDOWN_MS)
+                        onCommand(transcript.text.trim(), verification)
+                    }
+                } else {
+                    if (followUpDeadlineElapsedMs > 0L) {
+                        followUpDeadlineElapsedMs = 0L
                     }
 
-                    is WakePhraseMatch.Command -> {
-                        val verification = verifyIfNeeded(audio)
-                        if (verification.matched) {
-                            audioLoop?.muteFor(WAKE_COOLDOWN_MS)
-                            onCommand(wake.command, verification)
+                    when (val wake = WakePhraseMatcher.match(transcript.text)) {
+                        null -> Unit
+
+                        WakePhraseMatch.WakeOnly -> {
+                            followUpDeadlineElapsedMs =
+                                SystemClock.elapsedRealtime() + FOLLOW_UP_WINDOW_MS
+                            audioLoop?.muteFor(WAKE_ACK_MUTE_MS)
+                            onWakeOnly()
+                        }
+
+                        is WakePhraseMatch.Command -> {
+                            val verification = verifyIfNeeded(audio)
+                            if (verification.matched) {
+                                audioLoop?.muteFor(COMMAND_COOLDOWN_MS)
+                                onCommand(wake.command, verification)
+                            }
                         }
                     }
                 }
@@ -208,6 +230,7 @@ class AttentiveVoiceController(
         transcriber = null
         speakerEngine?.close()
         speakerEngine = null
+        followUpDeadlineElapsedMs = 0L
         processing.set(false)
         processor.shutdownNow()
         onStatus(
@@ -219,6 +242,8 @@ class AttentiveVoiceController(
     }
 
     companion object {
-        private const val WAKE_COOLDOWN_MS = 2_500L
+        private const val FOLLOW_UP_WINDOW_MS = 8_000L
+        private const val WAKE_ACK_MUTE_MS = 350L
+        private const val COMMAND_COOLDOWN_MS = 2_500L
     }
 }
