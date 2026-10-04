@@ -1,5 +1,7 @@
 package org.lia.accessibility.agent
 
+import org.lia.accessibility.agent.tools.*
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
