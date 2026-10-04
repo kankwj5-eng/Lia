@@ -20,6 +20,7 @@ class LocalModelPlanner(
 
     suspend fun plan(
         goal: String,
+        role: LiaAgentRole,
         state: PhoneState,
         screen: ScreenSnapshot,
         events: List<AgentEvent>
@@ -36,7 +37,7 @@ class LocalModelPlanner(
 
         repeat(maxProtocolAttempts) {
             val system = buildString {
-                append(LocalPlannerPromptBuilder.buildSystemPrompt())
+                append(LocalPlannerPromptBuilder.buildSystemPrompt(role))
                 correction?.let {
                     appendLine()
                     appendLine()
