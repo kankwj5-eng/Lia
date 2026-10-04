@@ -2,6 +2,7 @@ package org.lia.accessibility.agent
 
 import org.lia.accessibility.accessibility.ScreenSnapshot
 import org.lia.accessibility.agent.orchestration.LiaAgentProfile
+import org.lia.accessibility.agent.orchestration.LiaAgentRole
 import org.lia.accessibility.agent.orchestration.LiaAgentProfiles
 import org.lia.accessibility.agent.context.AgentContextPolicy
 import org.lia.accessibility.agent.context.DefaultAgentContextPolicy
