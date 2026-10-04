@@ -56,8 +56,7 @@ class AttentiveVoiceController(
     private var transcriber: SherpaWhisperCommandTranscriber? = null
     private var speakerEngine: SherpaSpeakerEngine? = null
 
-    @Volatile
-    private var followUpDeadlineElapsedMs: Long = 0L
+    private val wakeConversation = WakeConversationState()
 
     fun start(): AttentionStartResult {
         if (!preferences.alwaysListeningEnabled) {
@@ -141,39 +140,25 @@ class AttentiveVoiceController(
 
                 val speechToText = transcriber ?: return@execute
                 val transcript = speechToText.transcribe(audio)
-                val now = SystemClock.elapsedRealtime()
-                val followUpActive =
-                    followUpDeadlineElapsedMs > 0L &&
-                        now <= followUpDeadlineElapsedMs
 
-                if (followUpActive && transcript.text.isNotBlank()) {
-                    followUpDeadlineElapsedMs = 0L
-                    val verification = verifyIfNeeded(audio)
-                    if (verification.matched) {
-                        audioLoop?.muteFor(COMMAND_COOLDOWN_MS)
-                        onCommand(transcript.text.trim(), verification)
-                    }
-                } else {
-                    if (followUpDeadlineElapsedMs > 0L) {
-                        followUpDeadlineElapsedMs = 0L
+                when (
+                    val decision = wakeConversation.accept(
+                        transcript = transcript.text,
+                        nowElapsedMs = SystemClock.elapsedRealtime()
+                    )
+                ) {
+                    WakeConversationDecision.Ignore -> Unit
+
+                    WakeConversationDecision.AwaitCommand -> {
+                        audioLoop?.muteFor(WAKE_ACK_MUTE_MS)
+                        onWakeOnly()
                     }
 
-                    when (val wake = WakePhraseMatcher.match(transcript.text)) {
-                        null -> Unit
-
-                        WakePhraseMatch.WakeOnly -> {
-                            followUpDeadlineElapsedMs =
-                                SystemClock.elapsedRealtime() + FOLLOW_UP_WINDOW_MS
-                            audioLoop?.muteFor(WAKE_ACK_MUTE_MS)
-                            onWakeOnly()
-                        }
-
-                        is WakePhraseMatch.Command -> {
-                            val verification = verifyIfNeeded(audio)
-                            if (verification.matched) {
-                                audioLoop?.muteFor(COMMAND_COOLDOWN_MS)
-                                onCommand(wake.command, verification)
-                            }
+                    is WakeConversationDecision.Command -> {
+                        val verification = verifyIfNeeded(audio)
+                        if (verification.matched) {
+                            audioLoop?.muteFor(COMMAND_COOLDOWN_MS)
+                            onCommand(decision.text, verification)
                         }
                     }
                 }
@@ -230,7 +215,7 @@ class AttentiveVoiceController(
         transcriber = null
         speakerEngine?.close()
         speakerEngine = null
-        followUpDeadlineElapsedMs = 0L
+        wakeConversation.reset()
         processing.set(false)
         processor.shutdownNow()
         onStatus(
@@ -242,7 +227,6 @@ class AttentiveVoiceController(
     }
 
     companion object {
-        private const val FOLLOW_UP_WINDOW_MS = 8_000L
         private const val WAKE_ACK_MUTE_MS = 350L
         private const val COMMAND_COOLDOWN_MS = 2_500L
     }
