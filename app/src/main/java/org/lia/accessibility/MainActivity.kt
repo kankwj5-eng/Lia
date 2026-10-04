@@ -1,8 +1,13 @@
 package org.lia.accessibility
 
 import android.Manifest
+import android.app.NotificationManager
 import android.app.role.RoleManager
+import android.content.BroadcastReceiver
+import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
@@ -12,6 +17,7 @@ import android.provider.OpenableColumns
 import android.provider.Settings
 import android.view.View
 import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -20,7 +26,9 @@ import androidx.core.content.ContextCompat
 import com.google.android.material.switchmaterial.SwitchMaterial
 import org.lia.accessibility.accessibility.AccessibilityBridgeResult
 import org.lia.accessibility.accessibility.LiaAccessibilityBridge
+import org.lia.accessibility.accessibility.LiaAccessibilityService
 import org.lia.accessibility.ai.PlannerModelStore
+import org.lia.accessibility.notifications.LiaNotificationListenerService
 import org.lia.accessibility.vision.WorldVisionActivity
 import org.lia.accessibility.voice.OwnerVoiceAuthenticator
 import org.lia.accessibility.voice.SherpaSpeakerEngine
@@ -41,6 +49,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var plannerStatusText: TextView
     private lateinit var commandStatusText: TextView
     private lateinit var assistantStatusText: TextView
+    private lateinit var chatHistoryText: TextView
+    private lateinit var chatInput: EditText
     private lateinit var recordButton: Button
     private lateinit var saveButton: Button
     private lateinit var testButton: Button
@@ -49,6 +59,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var talkToLiaButton: Button
     private lateinit var cancelAgentButton: Button
     private lateinit var assistantRoleButton: Button
+    private lateinit var sendChatButton: Button
     private lateinit var voiceProtectionSwitch: SwitchMaterial
     private lateinit var bubbleSwitch: SwitchMaterial
     private lateinit var voiceControlsGroup: View
@@ -66,6 +77,7 @@ class MainActivity : AppCompatActivity() {
     private var commandTranscriber: SherpaWhisperCommandTranscriber? = null
     private var resumeVoiceCommandAfterMicPermission = false
     private var continueAccessibilitySetupOnResume = false
+    private var continueNotificationSetupOnResume = false
 
     private val phrases = listOf(
         "Hola Lía, esta es mi voz.",
@@ -90,6 +102,7 @@ class MainActivity : AppCompatActivity() {
     private val assistantRoleRequest =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             refreshAssistantStatus()
+        refreshPermissionStatus()
         }
 
     private val plannerModelPicker =
@@ -114,6 +127,8 @@ class MainActivity : AppCompatActivity() {
         plannerStatusText = findViewById(R.id.plannerStatusText)
         commandStatusText = findViewById(R.id.commandStatusText)
         assistantStatusText = findViewById(R.id.assistantStatusText)
+        chatHistoryText = findViewById(R.id.chatHistoryText)
+        chatInput = findViewById(R.id.chatInput)
         recordButton = findViewById(R.id.recordSampleButton)
         saveButton = findViewById(R.id.saveVoiceButton)
         testButton = findViewById(R.id.testVoiceButton)
@@ -122,6 +137,7 @@ class MainActivity : AppCompatActivity() {
         talkToLiaButton = findViewById(R.id.talkToLiaButton)
         cancelAgentButton = findViewById(R.id.cancelAgentButton)
         assistantRoleButton = findViewById(R.id.assistantRoleButton)
+        sendChatButton = findViewById(R.id.sendChatButton)
         voiceProtectionSwitch = findViewById(R.id.voiceProtectionSwitch)
         bubbleSwitch = findViewById(R.id.bubbleSwitch)
         voiceControlsGroup = findViewById(R.id.voiceControlsGroup)
@@ -172,6 +188,10 @@ class MainActivity : AppCompatActivity() {
             talkToLia()
         }
 
+        sendChatButton.setOnClickListener {
+            sendTypedGoal()
+        }
+
         cancelAgentButton.setOnClickListener {
             val cancelled = LiaAccessibilityBridge.cancel()
             commandStatus(
@@ -196,7 +216,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.notificationSettingsButton).setOnClickListener {
-            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            openNotificationAccessSetup()
         }
 
         refreshButtons()
@@ -246,6 +266,23 @@ class MainActivity : AppCompatActivity() {
                 .setNegativeButton("Todavía no", null)
                 .show()
         }
+
+        if (continueNotificationSetupOnResume) {
+            continueNotificationSetupOnResume = false
+            AlertDialog.Builder(this)
+                .setTitle("Ahora permite las notificaciones")
+                .setMessage(
+                    "Si ya elegiste “Permitir ajustes restringidos” en la información de Lía, " +
+                        "abre el acceso a notificaciones y activa Lía."
+                )
+                .setPositiveButton("Abrir acceso") { _, _ ->
+                    openNotificationSettings()
+                }
+                .setNegativeButton("Todavía no", null)
+                .show()
+        }
+
+        refreshPermissionStatus()
     }
 
     private fun openAccessibilitySetup() {
@@ -290,6 +327,137 @@ class MainActivity : AppCompatActivity() {
         }.onFailure {
             startActivity(Intent(Settings.ACTION_SETTINGS))
         }
+    }
+
+    private fun openNotificationAccessSetup() {
+        if (isNotificationAccessGranted()) {
+            commandStatus("El acceso a notificaciones ya está activo.")
+            openNotificationSettings()
+            return
+        }
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            openNotificationSettings()
+            return
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Android protege este acceso")
+            .setMessage(
+                "En apps instaladas desde un APK, Android puede ocultar el interruptor hasta que " +
+                    "autorices los ajustes restringidos. Abre la información de Lía, toca ⋮ y elige " +
+                    "“Permitir ajustes restringidos”. Después vuelve y activa el acceso a notificaciones."
+            )
+            .setPositiveButton("Abrir información de Lía") { _, _ ->
+                continueNotificationSetupOnResume = true
+                openAppDetails()
+            }
+            .setNeutralButton("Ya lo permití") { _, _ ->
+                openNotificationSettings()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun openNotificationSettings() {
+        runCatching {
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        }.onFailure {
+            startActivity(Intent(Settings.ACTION_SETTINGS))
+        }
+    }
+
+    private fun isNotificationAccessGranted(): Boolean {
+        val manager = getSystemService(NotificationManager::class.java) ?: return false
+        return manager.isNotificationListenerAccessGranted(
+            ComponentName(this, LiaNotificationListenerService::class.java)
+        )
+    }
+
+    private fun refreshPermissionStatus() {
+        if (!::assistantStatusText.isInitialized) return
+
+        val notificationButton = findViewById<Button>(R.id.notificationSettingsButton)
+        notificationButton.text = if (isNotificationAccessGranted()) {
+            "Notificaciones activas"
+        } else {
+            "Activar lectura de notificaciones"
+        }
+    }
+
+    private fun sendTypedGoal() {
+        val goal = chatInput.text?.toString()?.trim().orEmpty()
+        if (goal.isBlank()) {
+            commandStatus("Escribe lo que quieres que haga Lía.")
+            return
+        }
+        if (!plannerModelStore.isInstalled()) {
+            commandStatus("Importa primero un cerebro local GGUF o LiteRT-LM.")
+            return
+        }
+        if (!LiaAccessibilityBridge.isConnected()) {
+            commandStatus("Activa primero el control de Android para que Lía pueda actuar.")
+            return
+        }
+
+        appendChatLine("Tú", goal)
+        chatInput.setText("")
+        startTranscriptGoal(
+            transcript = goal,
+            verification = VoiceVerification(
+                matched = true,
+                score = 1f,
+                threshold = 0f,
+                message = "Orden escrita directamente dentro de Lía."
+            )
+        )
+    }
+
+    private fun appendChatLine(author: String, message: String) {
+        if (!::chatHistoryText.isInitialized || message.isBlank()) return
+        val current = chatHistoryText.text?.toString().orEmpty()
+        val next = if (current.isBlank()) {
+            "$author\n$message"
+        } else {
+            "$current\n\n$author\n$message"
+        }
+        chatHistoryText.text = next.takeLast(6_000)
+    }
+
+    private val agentStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action != LiaAccessibilityService.ACTION_AGENT_STATE) return
+            val status = intent.getStringExtra(LiaAccessibilityService.EXTRA_AGENT_STATUS).orEmpty()
+            val message = intent.getStringExtra(LiaAccessibilityService.EXTRA_MESSAGE).orEmpty()
+            if (message.isNotBlank()) {
+                appendChatLine(
+                    when (status) {
+                        "completed" -> "Lía"
+                        "authorization_required" -> "Lía · autorización"
+                        "failed" -> "Lía · error"
+                        "cancelled" -> "Lía"
+                        else -> "Lía · agente"
+                    },
+                    message
+                )
+            }
+            commandStatus(message.ifBlank { "El agente actualizó su estado." })
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        ContextCompat.registerReceiver(
+            this,
+            agentStateReceiver,
+            IntentFilter(LiaAccessibilityService.ACTION_AGENT_STATE),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+    }
+
+    override fun onStop() {
+        runCatching { unregisterReceiver(agentStateReceiver) }
+        super.onStop()
     }
 
     private fun handleAssistantLaunchIntent(intent: Intent?) {
