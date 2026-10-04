@@ -160,6 +160,27 @@ object LiaToolRouter {
                         )
                     )
 
+                "open_internet_panel" ->
+                    RoutedToolAction.System(SystemCommand.OpenInternetPanel)
+
+                "open_bluetooth_settings" ->
+                    RoutedToolAction.System(SystemCommand.OpenBluetoothSettings)
+
+                "open_web" ->
+                    RoutedToolAction.System(
+                        SystemCommand.OpenWeb(call.text("url"))
+                    )
+
+                "search_web" ->
+                    RoutedToolAction.System(
+                        SystemCommand.SearchWeb(call.text("query"))
+                    )
+
+                "copy_text" ->
+                    RoutedToolAction.System(
+                        SystemCommand.CopyText(call.text("text"))
+                    )
+
                 "get_location" ->
                     RoutedToolAction.GetLocation
 
