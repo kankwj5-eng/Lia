@@ -510,6 +510,10 @@ class LiaLocalAgentRuntime(
 
         private val SCREEN_CHANGING_TOOLS = setOf(
             "open_app",
+            "open_web",
+            "search_web",
+            "open_internet_panel",
+            "open_bluetooth_settings",
             "click",
             "set_text",
             "scroll",
