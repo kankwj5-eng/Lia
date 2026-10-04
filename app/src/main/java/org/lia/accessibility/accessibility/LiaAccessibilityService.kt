@@ -19,7 +19,7 @@ import org.lia.accessibility.LiaPreferences
 import org.lia.accessibility.MainActivity
 import org.lia.accessibility.R
 import org.lia.accessibility.agent.orchestration.LiaAgentCoordinator
-import org.lia.accessibility.agent.LocalAgentOutcome
+import org.lia.accessibility.agent.runtime.LocalAgentOutcome
 import org.lia.accessibility.agent.PhoneState
 import org.lia.accessibility.agent.PhoneStateProvider
 import org.lia.accessibility.conversation.ConversationSpeaker
