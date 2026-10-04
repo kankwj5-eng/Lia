@@ -368,10 +368,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun isNotificationAccessGranted(): Boolean {
-        val manager = getSystemService(NotificationManager::class.java) ?: return false
-        return manager.isNotificationListenerAccessGranted(
-            ComponentName(this, LiaNotificationListenerService::class.java)
-        )
+        val component = ComponentName(this, LiaNotificationListenerService::class.java)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            val manager = getSystemService(NotificationManager::class.java) ?: return false
+            return manager.isNotificationListenerAccessGranted(component)
+        }
+
+        val enabled = Settings.Secure.getString(
+            contentResolver,
+            "enabled_notification_listeners"
+        ).orEmpty()
+
+        return enabled
+            .split(':')
+            .mapNotNull(ComponentName::unflattenFromString)
+            .any { it == component }
     }
 
     private fun refreshPermissionStatus() {
