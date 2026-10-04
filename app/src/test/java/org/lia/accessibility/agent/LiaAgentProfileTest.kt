@@ -26,8 +26,9 @@ class LiaAgentProfileTest {
     @Test
     fun strictProtocolRejectsToolsOutsideActiveProfile() {
         val vision = LiaAgentProfiles.forRole(LiaAgentRole.VISION)
-        val result = StrictToolProtocol.parse(
-            raw = """{"tool":"set_torch","arguments":{"enabled":true}}""",
+        val result = StrictToolProtocol.validate(
+            toolName = "set_torch",
+            arguments = mapOf("enabled" to ToolValue.BooleanValue(true)),
             allowedToolNames = vision.toolNames
         )
         assertTrue(result is ToolProtocolResult.Rejected)
