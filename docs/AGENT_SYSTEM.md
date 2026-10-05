@@ -136,3 +136,26 @@ org/lia/accessibility/
 - visión que devuelve resultados directamente al runtime;
 - reanudación segura después de una autorización;
 - suite de evals de tareas Android reproducibles.
+
+## Núcleo de delegación de investigación
+
+`agent/delegation/` contiene contratos de investigación, límites de datos,
+autorización ligada al hash de cada solicitud y un ciclo de tarea con actualización
+atómica por revisión. Un trabajo remoto puede enviarse, consultarse, reconciliarse
+y cancelarse mediante un proveedor inyectado. Un envío incierto nunca se repite
+sin consultar su clave de idempotencia y comprobar de nuevo la autorización.
+
+El resultado externo se trata como texto; no ejecuta llamadas de herramientas.
+Un informe recibido pasa a `VERIFYING`: solo la verificación posterior de un
+documento permite completar la tarea. La cancelación local precede al intento
+remoto y bloquea resultados tardíos.
+
+Este bloque es infraestructura, no una función de investigación disponible en
+la aplicación. El proveedor y almacén en memoria existen únicamente en tests.
+Faltan persistencia Android, autorización accesible, PDF local, integración en el
+runtime y backend/proveedor real. No se registran herramientas incompletas en el
+catálogo y no se incluyen credenciales, resultados ficticios ni dependencias nuevas.
+
+Diseño y plan:
+- `docs/superpowers/specs/2026-10-04-external-delegation-design.md`
+- `docs/superpowers/plans/2026-10-04-delegation-core.md`
